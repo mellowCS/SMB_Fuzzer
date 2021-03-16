@@ -1,3 +1,5 @@
+use hex;
+
 /// *Negotiate Signing Enabled*:
 ///     - When set, indicates that security signatures are enabled on the client.
 ///       The client MUST set this bit if the SMB2_NEGOTIATE_SIGNING_REQUIRED bit is not set,
@@ -14,11 +16,15 @@ pub enum SecurityMode {
 
 impl SecurityMode {
     /// Return the corresponding byte code (byte_size bytes) for each security mode.
-    pub fn unpack_byte_code(&self, byte_size: u32) -> String {
+    pub fn unpack_byte_code(&self, byte_size: u32) -> Vec<u8> {
         let prefix = "00".repeat(byte_size as usize - 1);
         match self {
-            SecurityMode::NegotiateSigningEnabled => prefix + "01",
-            SecurityMode::NegotiateSigningRequired => prefix + "02",
+            SecurityMode::NegotiateSigningEnabled => {
+                hex::decode(prefix + "01").expect("Could not decode hex string to raw bytes.")
+            }
+            SecurityMode::NegotiateSigningRequired => {
+                hex::decode(prefix + "02").expect("Could not decode hex string to raw bytes.")
+            }
         }
     }
 }
@@ -71,7 +77,7 @@ impl Capabilities {
     }
 
     /// Add all capabilities values together and return them as a hex string.
-    pub fn return_all_capabilities() -> String {
+    pub fn return_all_capabilities() -> Vec<u8> {
         let combined_capabilities = Self::GlobalCapDFS.unpack_byte_code()
             + Self::GlobalCapLeasing.unpack_byte_code()
             + Self::GlobalCapLargeMTU.unpack_byte_code()
@@ -80,9 +86,12 @@ impl Capabilities {
             + Self::GlobalCapDirectoryLeasing.unpack_byte_code()
             + Self::GlobalCapEncryption.unpack_byte_code();
 
-        format!("{:#10x}", combined_capabilities)
-            .strip_prefix("0x")
-            .unwrap()
-            .to_string()
+        hex::decode(
+            format!("{:#10x}", combined_capabilities)
+                .strip_prefix("0x")
+                .unwrap()
+                .to_string(),
+        )
+        .expect("Could not decode capabilities hex string to raw bytes.")
     }
 }

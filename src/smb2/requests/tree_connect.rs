@@ -5,7 +5,7 @@
 use crate::smb2::handshake_helper::tree_connect_context::TreeConnectContext;
 
 /// tree connect request size of 9 bytes
-const STRUCTURE_SIZE: &str = "0900";
+const STRUCTURE_SIZE: &[u8; 2] = b"\x09\x00";
 
 /// A struct that represents a tree connect request
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -14,20 +14,20 @@ pub struct TreeConnect {
     /// indicating the size of the request structure, not including the header.
     /// The client MUST set it to this value regardless of how long Buffer[]
     /// actually is in the request being sent.
-    structure_size: String,
+    structure_size: Vec<u8>,
     /// Flags/Reserved (2 bytes): This field is interpreted in different ways
     /// depending on the SMB2 dialect. In the SMB 3.1.1 dialect,
     /// this field is interpreted as the Flags field, which indicates how to process the operation.
-    flags: Option<String>,
+    flags: Vec<u8>,
     /// PathOffset (2 bytes): The offset, in bytes, of the full share path name from the beginning
     /// of the packet header. The full share pathname is Unicode in the form "\\server\share"
     /// for the request. The server component of the path MUST be less than 256 characters in length,
     /// and it MUST be a NetBIOS name, a fully qualified domain name (FQDN), or a textual IPv4 or IPv6 address.
     /// The share component of the path MUST be less than or equal to 80 characters in length.
     /// The share name MUST NOT contain any invalid characters.
-    path_offset: Option<String>,
+    path_offset: Vec<u8>,
     /// PathLength (2 bytes): The length, in bytes, of the full share path name.
-    path_length: Option<String>,
+    path_length: Vec<u8>,
     /// Buffer (variable): If SMB2_TREE_CONNECT_FLAG_EXTENSION_PRESENT is not set in the Flags field of this structure,
     /// this field is a variable-length buffer that contains the full share path name.
     /// If SMB2_TREE_CONNECT_FLAG_EXTENSION_PRESENT is set in the Flags field in this structure,
@@ -39,10 +39,10 @@ impl TreeConnect {
     /// Creates a new instance of the tree connect request.
     pub fn default() -> Self {
         TreeConnect {
-            structure_size: String::from(STRUCTURE_SIZE),
-            flags: None,
-            path_offset: None,
-            path_length: None,
+            structure_size: STRUCTURE_SIZE.to_vec(),
+            flags: Vec::new(),
+            path_offset: Vec::new(),
+            path_length: Vec::new(),
             buffer: None,
         }
     }
@@ -69,11 +69,11 @@ pub enum Flags {
 
 impl Flags {
     /// Unpacks the byte code of tree connect request flags.
-    pub fn unpack_byte_code(&self) -> u32 {
+    pub fn unpack_byte_code(&self) -> Vec<u8> {
         match self {
-            Flags::ClusterReconnect => 0x0001,
-            Flags::RedirectToOwner => 0x0002,
-            Flags::ExtensionPresent => 0x0004,
+            Flags::ClusterReconnect => b"\x00\x01".to_vec(),
+            Flags::RedirectToOwner => b"\x00\x02".to_vec(),
+            Flags::ExtensionPresent => b"\x00\x04".to_vec(),
         }
     }
 }
@@ -85,16 +85,16 @@ impl Flags {
 pub struct TreeConnectExtension {
     /// TreeConnectContextOffset (4 bytes): The offset from the start
     /// of the SMB2 TREE_CONNECT request of an array of tree connect contexts.
-    tree_connect_context_offset: Option<String>,
+    tree_connect_context_offset: Vec<u8>,
     /// TreeConnectContextCount (2 bytes): The count of elements in the tree
     /// connect context array.
-    tree_connect_context_count: Option<String>,
+    tree_connect_context_count: Vec<u8>,
     /// Reserved (10 bytes): MUST be set to zero.
-    reserved: String,
+    reserved: Vec<u8>,
     /// PathName (variable): This field is a variable-length buffer that contains
     /// the full share path name
     /// The full share pathname is Unicode in the form "\\server\share" for the request
-    path_name: Option<String>,
+    path_name: Vec<u8>,
     /// TreeConnectContexts (variable): A variable length array of
     /// SMB2_TREE_CONNECT_CONTEXT structures
     tree_connect_contexts: Vec<TreeConnectContext>,
@@ -104,10 +104,10 @@ impl TreeConnectExtension {
     /// Creates a new Tree Connect Extension instance.
     pub fn default() -> Self {
         TreeConnectExtension {
-            tree_connect_context_offset: None,
-            tree_connect_context_count: None,
-            reserved: String::from("00000000000000000000"),
-            path_name: None,
+            tree_connect_context_offset: Vec::new(),
+            tree_connect_context_count: Vec::new(),
+            reserved: b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00".to_vec(),
+            path_name: Vec::new(),
             tree_connect_contexts: Vec::new(),
         }
     }
