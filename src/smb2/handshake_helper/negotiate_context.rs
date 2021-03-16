@@ -1,5 +1,9 @@
 //! This module describes the negotiate contexts.
+//! The SMB2_NEGOTIATE_CONTEXT structure is used by the SMB2 NEGOTIATE Request
+//! and the SMB2 NEGOTIATE Response to encode additional properties.
+//! The server MUST support receiving negotiate contexts in any order.
 
+/// ContextType (2 bytes): Specifies the type of context in the Data field.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ContextType {
     PreauthIntegrityCapabilities(PreauthIntegrityCapabilities),
@@ -24,18 +28,32 @@ impl ContextType {
     }
 }
 
+/// The SMB2_NEGOTIATE_CONTEXT structure is used by the SMB2 NEGOTIATE Request
+/// and the SMB2 NEGOTIATE Response to encode additional properties.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct NegotiateContext {
     /// ContextType (2 bytes): Specifies the type of context in the Data field.
-    context_type: String,
+    context_type: Option<String>,
     /// DataLength (2 bytes): The length, in bytes, of the Data field.
-    data_length: String,
+    data_length: Option<String>,
     /// Reserved (4 bytes): This field MUST NOT be used and MUST be reserved.
     /// This value MUST be set to 0 by the client, and MUST be ignored by the server.
     reserved: String,
     /// Data (variable): A variable-length field that contains
     /// the negotiate context specified by the ContextType field.
-    data: ContextType,
+    data: Option<ContextType>,
+}
+
+impl NegotiateContext {
+    /// Creates a new instance of the Negotiate Context.
+    pub fn default() -> Self {
+        NegotiateContext {
+            context_type: None,
+            data_length: None,
+            reserved: String::from("00000000"),
+            data: None,
+        }
+    }
 }
 
 /// The SMB2_PREAUTH_INTEGRITY_CAPABILITIES context is specified in an SMB2 NEGOTIATE
@@ -47,13 +65,13 @@ pub struct PreauthIntegrityCapabilities {
     /// the HashAlgorithms array. This value MUST be greater than zero.
     hash_algorithm_count: String,
     /// SaltLength (2 bytes): The size, in bytes, of the Salt field.
-    salt_length: String,
+    salt_length: Option<String>,
     /// HashAlgorithms (variable): An array of HashAlgorithmCount
     /// 16-bit integer IDs specifying the supported preauthentication integrity hash functions.
     /// There is currently only SHA-512 available.
     hash_algorithms: Vec<String>,
     /// Salt (variable): A buffer containing the salt value of the hash.
-    salt: String,
+    salt: Option<String>,
 }
 
 impl PreauthIntegrityCapabilities {
@@ -61,13 +79,16 @@ impl PreauthIntegrityCapabilities {
     pub fn default() -> Self {
         PreauthIntegrityCapabilities {
             hash_algorithm_count: String::from("0001"),
-            salt_length: String::new(),
+            salt_length: None,
             hash_algorithms: vec![String::from("0001")], // SHA-512
-            salt: String::new(),
+            salt: None,
         }
     }
 }
 
+/// An array of CipherCount 16-bit integer IDs specifying the supported encryption algorithms.
+/// These IDs MUST be in an order such that the most preferred cipher MUST be at the beginning
+/// of the array and least preferred cipher at the end of the array. The following IDs are defined.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Ciphers {
     AES128CCM,
@@ -94,7 +115,7 @@ impl Ciphers {
 pub struct EncryptionCapabilities {
     /// CipherCount (2 bytes): The number of ciphers in the Ciphers array.
     /// This value MUST be greater than zero.
-    cipher_count: String,
+    cipher_count: Option<String>,
     /// Ciphers (variable): An array of CipherCount 16-bit integer IDs
     /// specifying the supported encryption algorithms.
     /// These IDs MUST be in an order such that the most preferred cipher
@@ -107,7 +128,7 @@ impl EncryptionCapabilities {
     /// Creates a new EncryptionCapabilities instance.
     pub fn default() -> Self {
         EncryptionCapabilities {
-            cipher_count: String::new(),
+            cipher_count: None,
             ciphers: Vec::new(),
         }
     }
@@ -175,7 +196,7 @@ impl CompressionAlgorithms {
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct CompressionCapabilities {
     /// CompressionAlgorithmCount (2 bytes): The number of elements in CompressionAlgorithms array.
-    compression_algorithm_count: String,
+    compression_algorithm_count: Option<String>,
     /// Padding (2 bytes): The sender MUST set this to 0, and the receiver MUST ignore it on receipt.
     padding: String,
     /// Flags (4 bytes)
@@ -190,7 +211,7 @@ impl CompressionCapabilities {
     /// Creates a new compression capabilities instance.
     pub fn default() -> Self {
         CompressionCapabilities {
-            compression_algorithm_count: String::new(),
+            compression_algorithm_count: None,
             padding: String::from("0000"),
             flags: Vec::new(),
             compression_algorithms: Vec::new(),
@@ -204,15 +225,13 @@ impl CompressionCapabilities {
 pub struct NetnameNegotiateContextId {
     /// NetName (variable): A Unicode string containing the server name and specified
     /// by the client application. e.g. 'tom'
-    net_name: String,
+    net_name: Option<String>,
 }
 
 impl NetnameNegotiateContextId {
     /// Creates a new NetnameNegotiateContextId instance.
     pub fn default() -> Self {
-        NetnameNegotiateContextId {
-            net_name: String::new(),
-        }
+        NetnameNegotiateContextId { net_name: None }
     }
 }
 
@@ -262,7 +281,7 @@ impl RDMATransformIds {
 pub struct RDMATransformCapabilities {
     /// TransformCount (2 bytes): The number of elements in RDMATransformIds array.
     /// This value MUST be greater than 0.
-    transform_count: String,
+    transform_count: Option<String>,
     /// Reserved1 (2 bytes): This field MUST NOT be used and MUST be reserved.
     /// The sender MUST set this to 0, and the receiver MUST ignore it on receipt.
     reserved1: String,
@@ -278,7 +297,7 @@ impl RDMATransformCapabilities {
     /// Creates a new RDMATransformCapabilities instance.
     pub fn default() -> Self {
         RDMATransformCapabilities {
-            transform_count: String::new(),
+            transform_count: None,
             reserved1: String::from("0000"),
             reserved2: String::from("0000"),
             rdma_transform_ids: Vec::new(),

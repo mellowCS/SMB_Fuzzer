@@ -119,7 +119,7 @@ pub struct GenericHeader {
     /// In the SMB 2.0.2 dialect, this field MUST NOT be used and MUST be reserved.
     /// The sender MUST set this to 0, and the receiver MUST ignore it.
     /// In all other dialects, this field indicates the number of credits that this request consumes.
-    credit_charge: String,
+    credit_charge: Option<String>,
     /// This field is an indication to the server about the client's Channel change. Only for versions 3.x. (2 bytes)
     channel_sequence: Option<String>,
     /// This field SHOULD be set to zero and the server MUST ignore it on receipt.
@@ -130,11 +130,11 @@ pub struct GenericHeader {
     /// This field can be set to any value. Only for versions 2.x.
     status: Option<String>,
     /// The command code of this packet. (2 bytes)
-    command: String,
+    command: Option<String>,
     /// CreditRequest/CreditResponse (2 bytes): On a request, this field indicates
     /// the number of credits the client is requesting.
     /// On a response, it indicates the number of credits granted to the client.
-    credit: String,
+    credit: Option<String>,
     /// A flags field (4 bytes), which indicates how to process the operation.
     /// MUST be constructed using one of the Flag values.
     flags: Vec<String>,
@@ -143,10 +143,10 @@ pub struct GenericHeader {
     /// to the start of the subsequent 8-byte aligned SMB2 header.
     /// If this is not a compounded request or response,
     /// or this is the last header in a compounded request or response, this value MUST be 0.
-    next_command: String,
+    next_command: Option<String>,
     /// MessageId (8 bytes): A value that identifies a message request and
     /// response uniquely across all messages that are sent on the same SMB 2 Protocol transport connection.
-    message_id: String,
+    message_id: Option<String>,
 }
 
 impl GenericHeader {
@@ -155,20 +155,20 @@ impl GenericHeader {
         GenericHeader {
             protocol_id: PROTOCOL_ID.to_string(),
             structure_size: STRUCTURE_SIZE.to_string(),
-            credit_charge: String::new(),
+            credit_charge: None,
             channel_sequence: None,
             reserved: None,
             status: None,
-            command: String::new(),
-            credit: String::new(),
+            command: None,
+            credit: None,
             flags: Vec::new(),
-            next_command: String::new(),
-            message_id: String::new(),
+            next_command: None,
+            message_id: None,
         }
     }
 
     /// Prints optional fields even if they resolve to None.
-    pub fn print_optional(field: Option<String>) -> String {
+    pub fn print_optional_string(field: Option<String>) -> String {
         match field {
             None => String::from("None"),
             Some(value) => value,
@@ -183,15 +183,15 @@ impl std::fmt::Display for GenericHeader {
             "Generic Header:\n\t\t{}\n\t\t{}\n\t\t{}\n\t\t{}\n\t\t{}\n\t\t{}\n\t\t{}\n\t\t{}\n\t\t{}\n\t\t{}\n\t\t{}",
             self.protocol_id,
             self.structure_size,
-            self.credit_charge,
-            GenericHeader::print_optional(self.channel_sequence.clone()),
-            GenericHeader::print_optional(self.reserved.clone()),
-            GenericHeader::print_optional(self.status.clone()),
-            self.command,
-            self.credit,
+            GenericHeader::print_optional_string(self.credit_charge.clone()),
+            GenericHeader::print_optional_string(self.channel_sequence.clone()),
+            GenericHeader::print_optional_string(self.reserved.clone()),
+            GenericHeader::print_optional_string(self.status.clone()),
+            GenericHeader::print_optional_string(self.command.clone()),
+            GenericHeader::print_optional_string(self.credit.clone()),
             self.flags.clone().into_iter().collect::<String>(),
-            self.next_command,
-            self.message_id
+            GenericHeader::print_optional_string(self.next_command.clone()),
+            GenericHeader::print_optional_string(self.message_id.clone())
         )
     }
 }
@@ -202,14 +202,14 @@ pub struct AsyncHeader {
     /// Generic header fields that are equivalent for both sync and async headers.
     generic: GenericHeader,
     /// AsyncId (8 bytes): A unique identification number that is created by the server to handle operations asynchronously.
-    async_id: String,
+    async_id: Option<String>,
     /// SessionId (8 bytes): Uniquely identifies the established session for the command.
     ///This field MUST be set to 0 for an SMB2 NEGOTIATE Request and for an SMB2 NEGOTIATE Response.
-    session_id: String,
+    session_id: Option<String>,
     /// Signature (16 bytes): The 16-byte signature of the message,
     /// if SMB2_FLAGS_SIGNED is set in the Flags field of the SMB2 header and the message is not encrypted.
     /// If the message is not signed, this field MUST be 0.
-    signature: String,
+    signature: Option<String>,
 }
 
 impl AsyncHeader {
@@ -217,9 +217,9 @@ impl AsyncHeader {
     pub fn default() -> Self {
         AsyncHeader {
             generic: GenericHeader::default(),
-            async_id: String::new(),
-            session_id: String::new(),
-            signature: String::new(),
+            async_id: None,
+            session_id: None,
+            signature: None,
         }
     }
 }
@@ -229,7 +229,10 @@ impl std::fmt::Display for AsyncHeader {
         write!(
             f,
             "Async Header:\n\t{}\n\t{}\n\t{}\n\t{}",
-            self.generic, self.async_id, self.session_id, self.signature,
+            self.generic,
+            GenericHeader::print_optional_string(self.async_id.clone()),
+            GenericHeader::print_optional_string(self.session_id.clone()),
+            GenericHeader::print_optional_string(self.signature.clone()),
         )
     }
 }
@@ -241,7 +244,7 @@ pub struct SyncHeader {
     generic: GenericHeader,
     /// Reserved (8 bytes): The client SHOULD<2> set this field to 0.
     /// The server MAY<3> ignore this field on receipt.
-    reserved: String,
+    reserved: Option<String>,
     /// TreeId (4 bytes): Uniquely identifies the tree connect for the command.
     /// This MUST be 0 for the SMB2 TREE_CONNECT Request. The TreeId can be
     /// any unsigned 32-bit integer that is received from a previous SMB2 TREE_CONNECT Response.
@@ -255,14 +258,14 @@ pub struct SyncHeader {
     /// - SMB2 ECHO Request
     /// - SMB2 ECHO Response
     /// - SMB2 CANCEL Request
-    tree_id: String,
+    tree_id: Option<String>,
     /// SessionId (8 bytes): Uniquely identifies the established session for the command.
     /// This field MUST be set to 0 for an SMB2 NEGOTIATE Request and for an SMB2 NEGOTIATE Response.
-    session_id: String,
+    session_id: Option<String>,
     /// Signature (16 bytes): The 16-byte signature of the message, if SMB2_FLAGS_SIGNED
     /// is set in the Flags field of the SMB2 header and the message is not encrypted.
     /// If the message is not signed, this field MUST be 0.
-    signature: String,
+    signature: Option<String>,
 }
 
 impl SyncHeader {
@@ -270,10 +273,10 @@ impl SyncHeader {
     pub fn default() -> Self {
         SyncHeader {
             generic: GenericHeader::default(),
-            reserved: String::new(),
-            tree_id: String::new(),
-            session_id: String::new(),
-            signature: String::new(),
+            reserved: None,
+            tree_id: None,
+            session_id: None,
+            signature: None,
         }
     }
 }
@@ -283,7 +286,11 @@ impl std::fmt::Display for SyncHeader {
         write!(
             f,
             "Sync Header: \n\t{}\n\t{}\n\t{}\n\t{}\n\t{}",
-            self.generic, self.reserved, self.tree_id, self.session_id, self.signature,
+            self.generic,
+            GenericHeader::print_optional_string(self.reserved.clone()),
+            GenericHeader::print_optional_string(self.tree_id.clone()),
+            GenericHeader::print_optional_string(self.session_id.clone()),
+            GenericHeader::print_optional_string(self.signature.clone()),
         )
     }
 }

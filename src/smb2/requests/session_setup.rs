@@ -1,4 +1,7 @@
 //! This module implements the session setup request.
+//! The SMB2 SESSION_SETUP Request packet is sent by the client to request a new authenticated session
+//! within a new or existing SMB 2 Protocol transport connection to the server.
+//! This request is composed of an SMB2 header, followed by this request structure.
 
 use crate::smb2::handshake_helper::fields::SecurityMode;
 
@@ -18,43 +21,43 @@ pub struct SessionSetup {
     /// Flags (1 byte): If the client implements the SMB 3.x dialect family,
     /// this field MUST be set to combination of zero or more flags.
     /// Otherwise, it MUST be set to 0.
-    flags: String,
+    flags: Option<String>,
     /// SecurityMode (1 byte): The security mode field specifies whether SMB signing
     /// is enabled or required at the client. This field MUST be set.
-    security_mode: SecurityMode,
+    security_mode: Option<SecurityMode>,
     /// Capabilities (4 bytes): Specifies protocol capabilities for the client.
-    capabilities: String,
+    capabilities: Option<String>,
     /// Channel (4 bytes): This field MUST NOT be used and MUST be reserved.
     /// The client MUST set this to 0, and the server MUST ignore it on receipt.
     channel: String,
     /// SecurityBufferOffset (2 bytes): The offset, in bytes, from the beginning of the
     /// SMB 2 Protocol header to the security buffer.
-    security_buffer_offset: String,
+    security_buffer_offset: Option<String>,
     /// SecurityBufferLength (2 bytes): The length, in bytes, of the security buffer.
-    security_buffer_length: String,
+    security_buffer_length: Option<String>,
     /// PreviousSessionId (8 bytes): A previously established session identifier.
     /// The server uses this value to identify the client session that was disconnected due to a network error.
-    previous_session_id: String,
+    previous_session_id: Option<String>,
     /// Buffer (variable): A variable-length buffer that contains the security buffer for the request,
     /// as specified by SecurityBufferOffset and SecurityBufferLength.
     /// If the server initiated authentication using SPNEGO, the buffer MUST contain a token as produced by
     /// the GSS protocol. If the client initiated authentication, the buffer SHOULD contain a token
     /// as produced by an authentication protocol of the client's choice.
-    buffer: String,
+    buffer: Option<String>,
 }
 
 impl SessionSetup {
-    pub fn new(security_mode: SecurityMode) -> Self {
+    pub fn default() -> Self {
         SessionSetup {
             structure_size: String::from(STRUCTURE_SIZE),
-            flags: String::new(),
-            security_mode,
-            capabilities: String::new(),
+            flags: None,
+            security_mode: None,
+            capabilities: None,
             channel: String::from("00000000"),
-            security_buffer_offset: String::new(),
-            security_buffer_length: String::new(),
-            previous_session_id: String::new(),
-            buffer: String::new(),
+            security_buffer_offset: None,
+            security_buffer_length: None,
+            previous_session_id: None,
+            buffer: None,
         }
     }
 }
