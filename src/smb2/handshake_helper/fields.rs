@@ -1,5 +1,3 @@
-use hex;
-
 /// *Negotiate Signing Enabled*:
 ///     - When set, indicates that security signatures are enabled on the client.
 ///       The client MUST set this bit if the SMB2_NEGOTIATE_SIGNING_REQUIRED bit is not set,
