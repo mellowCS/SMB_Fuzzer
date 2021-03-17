@@ -13,6 +13,8 @@ pub enum SecurityMode {
 }
 
 impl SecurityMode {
+    /// TODO: Modes can be combined. Add function for adding hex numbers and don't forget that security mode is avaiable
+    /// as a 1 byte and 2 byte version.
     /// Return the corresponding byte code (byte_size bytes) for each security mode.
     pub fn unpack_byte_code(&self, byte_size: u32) -> Vec<u8> {
         let prefix = "00".repeat(byte_size as usize - 1);
