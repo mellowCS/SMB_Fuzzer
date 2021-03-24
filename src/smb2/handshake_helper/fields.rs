@@ -17,14 +17,29 @@ impl SecurityMode {
     /// as a 1 byte and 2 byte version.
     /// Return the corresponding byte code (byte_size bytes) for each security mode.
     pub fn unpack_byte_code(&self, byte_size: u32) -> Vec<u8> {
-        let prefix = "00".repeat(byte_size as usize - 1);
+        let mut prefix: Vec<u8> = vec![0; (byte_size - 1) as usize];
         match self {
             SecurityMode::NegotiateSigningEnabled => {
-                hex::decode(prefix + "01").expect("Could not decode hex string to raw bytes.")
+                prefix.insert(0, 1);
+                prefix
             }
             SecurityMode::NegotiateSigningRequired => {
-                hex::decode(prefix + "02").expect("Could not decode hex string to raw bytes.")
+                prefix.insert(0, 2);
+                prefix
             }
+        }
+    }
+
+    /// Maps the byte code of an incoming response to the corresponding security mode.
+    pub fn map_byte_code_to_mode(byte_code: Vec<u8>) -> SecurityMode {
+        if let Some(code) = byte_code.get(0) {
+            return match code {
+                1 => SecurityMode::NegotiateSigningEnabled,
+                2 => SecurityMode::NegotiateSigningRequired,
+                _ => panic!("Invalid security mode."),
+            };
+        } else {
+            panic!("Empty byte code for security mode.");
         }
     }
 }
@@ -63,7 +78,7 @@ pub enum Capabilities {
 
 impl Capabilities {
     /// Return the corresponding byte code (4 bytes) for each capability.
-    pub fn unpack_byte_code(&self) -> u32 {
+    pub fn unpack_byte_code(&self) -> u8 {
         match self {
             Capabilities::GlobalCapDFS => 0x00000001,
             Capabilities::GlobalCapLeasing => 0x00000002,
@@ -76,22 +91,48 @@ impl Capabilities {
         }
     }
 
-    /// Add all capabilities values together and return them as a hex string.
-    pub fn return_all_capabilities() -> Vec<u8> {
-        let combined_capabilities = Self::GlobalCapDFS.unpack_byte_code()
-            + Self::GlobalCapLeasing.unpack_byte_code()
-            + Self::GlobalCapLargeMTU.unpack_byte_code()
-            + Self::GlobalCapMultiChannel.unpack_byte_code()
-            + Self::GlobalCapPersistentHandles.unpack_byte_code()
-            + Self::GlobalCapDirectoryLeasing.unpack_byte_code()
-            + Self::GlobalCapEncryption.unpack_byte_code();
+    /// Add the values of a list of chosen capabilities and return the sum as a hex string.
+    pub fn return_sum_of_chosen_capabilities(capabilities: Vec<Capabilities>) -> Vec<u8> {
+        let combined_cap: u8 = capabilities
+            .iter()
+            .fold(0u8, |acc, cap| acc + cap.unpack_byte_code());
 
-        hex::decode(
-            format!("{:#10x}", combined_capabilities)
-                .strip_prefix("0x")
-                .unwrap()
-                .to_string(),
-        )
-        .expect("Could not decode capabilities hex string to raw bytes.")
+        vec![combined_cap, 0, 0, 0]
+    }
+
+    /// Shortcut for returning all capabilities as a sum.
+    pub fn return_all_capabilities() -> Vec<u8> {
+        Capabilities::return_sum_of_chosen_capabilities(vec![
+            Capabilities::GlobalCapDFS,
+            Capabilities::GlobalCapLeasing,
+            Capabilities::GlobalCapLargeMTU,
+            Capabilities::GlobalCapMultiChannel,
+            Capabilities::GlobalCapPersistentHandles,
+            Capabilities::GlobalCapDirectoryLeasing,
+            Capabilities::GlobalCapEncryption,
+        ])
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_return_sum_of_chosen_capabilities() {
+        let chosen = vec![
+            Capabilities::GlobalCapDFS,
+            Capabilities::GlobalCapLeasing,
+            Capabilities::GlobalCapLargeMTU,
+            Capabilities::GlobalCapMultiChannel,
+            Capabilities::GlobalCapPersistentHandles,
+            Capabilities::GlobalCapDirectoryLeasing,
+            Capabilities::GlobalCapEncryption,
+        ];
+
+        assert_eq!(
+            vec![127, 0, 0, 0],
+            Capabilities::return_sum_of_chosen_capabilities(chosen)
+        );
     }
 }

@@ -135,45 +135,43 @@ impl WorkstationFields {
     }
 }
 
-/// The AV_PAIR structure defines an attribute/value pair. Sequences of AV_PAIR structures 
+/// The AV_PAIR structure defines an attribute/value pair. Sequences of AV_PAIR structures
 /// are used in the CHALLENGE_MESSAGE directly. They are also in the AUTHENTICATE_MESSAGE
 /// via the NTLMv2_CLIENT_CHALLENGE structure.
-/// When AV pairs are specified, MsvAvEOL MUST be the last item specified. 
+/// When AV pairs are specified, MsvAvEOL MUST be the last item specified.
 /// All other AV pairs, if present, can be specified in any order.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct AVPair {
-    /// AvId (2 bytes): A 16-bit unsigned integer that defines the information 
-    /// type in the Value field. The contents of this field MUST be a value from 
-    /// the following table. The corresponding Value field in this AV_PAIR MUST 
+    /// AvId (2 bytes): A 16-bit unsigned integer that defines the information
+    /// type in the Value field. The contents of this field MUST be a value from
+    /// the following table. The corresponding Value field in this AV_PAIR MUST
     /// contain the information specified in the description of that AvId.
     av_id: Vec<u8>,
-    /// AvLen (2 bytes): A 16-bit unsigned integer that defines the length, 
+    /// AvLen (2 bytes): A 16-bit unsigned integer that defines the length,
     /// in bytes, of the Value field.
     av_len: Vec<u8>,
-    /// Value (variable): A variable-length byte-array that contains the value 
-    /// defined for this AV pair entry. The contents of this field depend on the 
-    /// type expressed in the AvId field. The available types and resulting format 
-    /// and contents of this field are specified in the table within the AvId field 
+    /// Value (variable): A variable-length byte-array that contains the value
+    /// defined for this AV pair entry. The contents of this field depend on the
+    /// type expressed in the AvId field. The available types and resulting format
+    /// and contents of this field are specified in the table within the AvId field
     /// description in this topic.
     value: Vec<u8>,
-
 }
 
-
 /// *MsvAvEOL*:
-/// - Indicates that this is the last AV_PAIR in the list. AvLen MUST be 0. 
+/// - Indicates that this is the last AV_PAIR in the list. AvLen MUST be 0.
 ///   This type of information MUST be present in the AV pair list.
 ///
 /// *MsvAvNbComputerName*:
-/// - The server's NetBIOS computer name. The name MUST be in Unicode, and is 
+/// - The server's NetBIOS computer name. The name MUST be in Unicode, and is
 ///   not null-terminated. This type of information MUST be present in the AV_pair list.
 ///
 /// *MsvAvNbDomainName*:
-/// - The server's NetBIOS domain name. The name MUST be in Unicode, and is not null-terminated. 
+/// - The server's NetBIOS domain name. The name MUST be in Unicode, and is not null-terminated.
 ///   This type of information MUST be present in the AV_pair list.
 ///
 /// *MsvAvDnsComputerName*:
-/// - The fully qualified domain name (FQDN) of the computer. The name MUST be in Unicode, 
+/// - The fully qualified domain name (FQDN) of the computer. The name MUST be in Unicode,
 ///   and is not null-terminated.
 ///
 /// *MsvAvDnsDomainName*:
@@ -194,14 +192,14 @@ pub struct AVPair {
 ///   This structure is always sent in the CHALLENGE_MESSAGE.
 ///
 /// *MsvAvSingleHost*:
-/// - A Single_Host_Data structure. The Value field contains a platform-specific blob, 
+/// - A Single_Host_Data structure. The Value field contains a platform-specific blob,
 ///   as well as a MachineID created at computer startup to identify the calling machine.
 ///
 /// *MsvAvTargetName*:
 /// - The SPN of the target server. The name MUST be in Unicode and is not null-terminated.
 ///
 /// *MsvAvChannelBindings*:
-/// - A channel bindings hash. The Value field contains an MD5 hash of a gss_channel_bindings_struct. 
+/// - A channel bindings hash. The Value field contains an MD5 hash of a gss_channel_bindings_struct.
 ///   An all-zero value of the hash is used to indicate absence of channel bindings.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum AvId {

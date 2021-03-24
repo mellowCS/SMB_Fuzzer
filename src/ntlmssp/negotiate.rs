@@ -1,9 +1,7 @@
-//! The NEGOTIATE_MESSAGE defines an NTLM negotiate message that is sent from the client to the server. 
+//! The NEGOTIATE_MESSAGE defines an NTLM negotiate message that is sent from the client to the server.
 //! This message allows the client to specify its supported NTLM options to the server.
 
-use crate::gss::BitString;
-
-use super::{Version, DomainNameFields, WorkstationFields};
+use super::{DomainNameFields, Version, WorkstationFields};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Negotiate {
@@ -36,29 +34,29 @@ pub struct Negotiate {
     /// flag is set in the NegotiateFlags field. This structure SHOULD be used for debugging purposes only.
     /// In normal (nondebugging) protocol messages, it is ignored and does not affect the NTLM message processing.
     version: Version,
-    /// Payload (variable): A byte-array that contains the data referred to by the DomainNameBufferOffset and 
-    /// WorkstationBufferOffset fields. Payload data can be present in any order within the Payload field, 
-    /// with variable-length padding before or after the data. The data that can be present in the Payload 
+    /// Payload (variable): A byte-array that contains the data referred to by the DomainNameBufferOffset and
+    /// WorkstationBufferOffset fields. Payload data can be present in any order within the Payload field,
+    /// with variable-length padding before or after the data. The data that can be present in the Payload
     /// field of this message, in no particular order.
     payload: Payload,
 }
 
 impl Negotiate {
     /// Creates a new instance of the negotiate message type for NTLMSSP.
-    pub fn default() -> Self {
+    pub fn _default() -> Self {
         Negotiate {
             negotiate_flags: Vec::new(),
             domain_name_fields: DomainNameFields::default(),
             workstation_fields: WorkstationFields::default(),
             version: Version::default(),
-            payload: Payload::default(),
+            payload: Payload::_default(),
         }
     }
 }
 
-/// Payload (variable): A byte-array that contains the data referred to by the DomainNameBufferOffset and 
-/// WorkstationBufferOffset fields. Payload data can be present in any order within the Payload field, 
-/// with variable-length padding before or after the data. The data that can be present in the Payload 
+/// Payload (variable): A byte-array that contains the data referred to by the DomainNameBufferOffset and
+/// WorkstationBufferOffset fields. Payload data can be present in any order within the Payload field,
+/// with variable-length padding before or after the data. The data that can be present in the Payload
 /// field of this message, in no particular order.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Payload {
@@ -74,7 +72,7 @@ pub struct Payload {
 
 impl Payload {
     /// Creates a new instance of the NTLM Negotiate Payload.
-    pub fn default() -> Self {
+    pub fn _default() -> Self {
         Payload {
             domain_name: Vec::new(),
             workstation_name: Vec::new(),

@@ -18,12 +18,73 @@ impl ContextType {
     /// Unpacks the byte code for the context type.
     pub fn unpack_byte_code(&self) -> Vec<u8> {
         match self {
-            ContextType::PreauthIntegrityCapabilities(_) => b"\x00\x01".to_vec(),
-            ContextType::EncryptionCapabilities(_) => b"\x00\x02".to_vec(),
-            ContextType::CompressionCapabilities(_) => b"\x00\x03".to_vec(),
-            ContextType::NetnameNegotiateContextId(_) => b"\x00\x05".to_vec(),
-            ContextType::TransportCapabilities(_) => b"\x00\x06".to_vec(),
-            ContextType::RDMATransformCapabilities(_) => b"\x00\x07".to_vec(),
+            ContextType::PreauthIntegrityCapabilities(_) => b"\x01\x00".to_vec(),
+            ContextType::EncryptionCapabilities(_) => b"\x02\x00".to_vec(),
+            ContextType::CompressionCapabilities(_) => b"\x03\x00".to_vec(),
+            ContextType::NetnameNegotiateContextId(_) => b"\x05\x00".to_vec(),
+            ContextType::TransportCapabilities(_) => b"\x06\x00".to_vec(),
+            ContextType::RDMATransformCapabilities(_) => b"\x07\x00".to_vec(),
+        }
+    }
+
+    /// Maps the byte code of an incoming response to the corresponding context type.
+    pub fn map_byte_code_to_context_type(byte_code: Vec<u8>) -> ContextType {
+        if let Some(code) = byte_code.get(0) {
+            match code {
+                1 => ContextType::PreauthIntegrityCapabilities(
+                    PreauthIntegrityCapabilities::default(),
+                ),
+                2 => ContextType::EncryptionCapabilities(EncryptionCapabilities::default()),
+                3 => ContextType::CompressionCapabilities(CompressionCapabilities::default()),
+                5 => ContextType::NetnameNegotiateContextId(NetnameNegotiateContextId::default()),
+                6 => ContextType::TransportCapabilities(TransportCapabilities::default()),
+                7 => ContextType::RDMATransformCapabilities(RDMATransformCapabilities::default()),
+                _ => panic!("Invalid context type in parsed response."),
+            }
+        } else {
+            panic!("Empty context type in parsed response.")
+        }
+    }
+
+    pub fn unpack_preauth_integrity(&self) -> PreauthIntegrityCapabilities {
+        match self {
+            ContextType::PreauthIntegrityCapabilities(pre) => pre.clone(),
+            _ => panic!("Tried to unpack invalid Context Type."),
+        }
+    }
+
+    pub fn unpack_encryption(&self) -> EncryptionCapabilities {
+        match self {
+            ContextType::EncryptionCapabilities(enc) => enc.clone(),
+            _ => panic!("Tried to unpack invalid Context Type."),
+        }
+    }
+
+    pub fn unpack_compression(&self) -> CompressionCapabilities {
+        match self {
+            ContextType::CompressionCapabilities(comp) => comp.clone(),
+            _ => panic!("Tried to unpack invalid Context Type."),
+        }
+    }
+
+    pub fn unpack_netname(&self) -> NetnameNegotiateContextId {
+        match self {
+            ContextType::NetnameNegotiateContextId(net) => net.clone(),
+            _ => panic!("Tried to unpack invalid Context Type."),
+        }
+    }
+
+    pub fn unpack_transport(&self) -> TransportCapabilities {
+        match self {
+            ContextType::TransportCapabilities(trans) => trans.clone(),
+            _ => panic!("Tried to unpack invalid Context Type."),
+        }
+    }
+
+    pub fn unpack_rdma_tansform(&self) -> RDMATransformCapabilities {
+        match self {
+            ContextType::RDMATransformCapabilities(rdma) => rdma.clone(),
+            _ => panic!("Tried to unpack invalid Context Type."),
         }
     }
 }
@@ -33,15 +94,15 @@ impl ContextType {
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct NegotiateContext {
     /// ContextType (2 bytes): Specifies the type of context in the Data field.
-    context_type: Vec<u8>,
+    pub context_type: Vec<u8>,
     /// DataLength (2 bytes): The length, in bytes, of the Data field.
-    data_length: Vec<u8>,
+    pub data_length: Vec<u8>,
     /// Reserved (4 bytes): This field MUST NOT be used and MUST be reserved.
     /// This value MUST be set to 0 by the client, and MUST be ignored by the server.
-    reserved: Vec<u8>,
+    pub reserved: Vec<u8>,
     /// Data (variable): A variable-length field that contains
     /// the negotiate context specified by the ContextType field.
-    data: Option<ContextType>,
+    pub data: Option<ContextType>,
 }
 
 impl NegotiateContext {
@@ -50,7 +111,7 @@ impl NegotiateContext {
         NegotiateContext {
             context_type: Vec::new(),
             data_length: Vec::new(),
-            reserved: b"\x00\x00\x00\x00".to_vec(),
+            reserved: vec![0; 4],
             data: None,
         }
     }
@@ -63,24 +124,24 @@ impl NegotiateContext {
 pub struct PreauthIntegrityCapabilities {
     /// HashAlgorithmCount (2 bytes): The number of hash algorithms in
     /// the HashAlgorithms array. This value MUST be greater than zero.
-    hash_algorithm_count: Vec<u8>,
+    pub hash_algorithm_count: Vec<u8>,
     /// SaltLength (2 bytes): The size, in bytes, of the Salt field.
-    salt_length: Vec<u8>,
+    pub salt_length: Vec<u8>,
     /// HashAlgorithms (variable): An array of HashAlgorithmCount
     /// 16-bit integer IDs specifying the supported preauthentication integrity hash functions.
     /// There is currently only SHA-512 available.
-    hash_algorithms: Vec<Vec<u8>>,
+    pub hash_algorithms: Vec<Vec<u8>>,
     /// Salt (variable): A buffer containing the salt value of the hash.
-    salt: Vec<u8>,
+    pub salt: Vec<u8>,
 }
 
 impl PreauthIntegrityCapabilities {
     /// Creates a new PreauthIntegrityCapabilities instance.
     pub fn default() -> Self {
         PreauthIntegrityCapabilities {
-            hash_algorithm_count: b"\x00\x01".to_vec(),
+            hash_algorithm_count: b"\x01\x00".to_vec(),
             salt_length: Vec::new(),
-            hash_algorithms: vec![b"\x00\x01".to_vec()], // SHA-512
+            hash_algorithms: vec![b"\x01\x00".to_vec()], // SHA-512
             salt: Vec::new(),
         }
     }
@@ -101,10 +162,10 @@ impl Ciphers {
     /// Unpacks the byte code of ciphers.
     pub fn unpack_byte_code(&self) -> Vec<u8> {
         match self {
-            Ciphers::AES128CCM => b"\x00\x01".to_vec(),
-            Ciphers::AES128GCM => b"\x00\x01".to_vec(),
-            Ciphers::AES256CCM => b"\x00\x01".to_vec(),
-            Ciphers::AES256GCM => b"\x00\x01".to_vec(),
+            Ciphers::AES128CCM => b"\x01\x00".to_vec(),
+            Ciphers::AES128GCM => b"\x02\x00".to_vec(),
+            Ciphers::AES256CCM => b"\x03\x00".to_vec(),
+            Ciphers::AES256GCM => b"\x04\x00".to_vec(),
         }
     }
 }
@@ -115,13 +176,13 @@ impl Ciphers {
 pub struct EncryptionCapabilities {
     /// CipherCount (2 bytes): The number of ciphers in the Ciphers array.
     /// This value MUST be greater than zero.
-    cipher_count: Vec<u8>,
+    pub cipher_count: Vec<u8>,
     /// Ciphers (variable): An array of CipherCount 16-bit integer IDs
     /// specifying the supported encryption algorithms.
     /// These IDs MUST be in an order such that the most preferred cipher
     /// MUST be at the beginning of the array and least preferred cipher
     /// at the end of the array.
-    ciphers: Vec<Vec<u8>>,
+    pub ciphers: Vec<Vec<u8>>,
 }
 
 impl EncryptionCapabilities {
@@ -150,7 +211,7 @@ impl Flags {
     pub fn unpack_byte_code(&self) -> Vec<u8> {
         match self {
             Flags::CompressionCapabilitiesFlagNone => b"\x00\x00\x00\x00".to_vec(),
-            Flags::CompressionCapabilitiesFlagChained => b"\x00\x00\x00\x01".to_vec(),
+            Flags::CompressionCapabilitiesFlagChained => b"\x01\x00\x00\x00".to_vec(),
         }
     }
 }
@@ -183,10 +244,10 @@ impl CompressionAlgorithms {
     pub fn unpack_byte_code(&self) -> Vec<u8> {
         match self {
             CompressionAlgorithms::None => b"\x00\x00".to_vec(),
-            CompressionAlgorithms::LZNT1 => b"\x00\x01".to_vec(),
-            CompressionAlgorithms::LZ77 => b"\x00\x02".to_vec(),
-            CompressionAlgorithms::LZ77Huffman => b"\x00\x03".to_vec(),
-            CompressionAlgorithms::PatternV1 => b"\x00\x04".to_vec(),
+            CompressionAlgorithms::LZNT1 => b"\x01\x00".to_vec(),
+            CompressionAlgorithms::LZ77 => b"\x02\x00".to_vec(),
+            CompressionAlgorithms::LZ77Huffman => b"\x03\x00".to_vec(),
+            CompressionAlgorithms::PatternV1 => b"\x04\x00".to_vec(),
         }
     }
 }
@@ -196,15 +257,15 @@ impl CompressionAlgorithms {
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct CompressionCapabilities {
     /// CompressionAlgorithmCount (2 bytes): The number of elements in CompressionAlgorithms array.
-    compression_algorithm_count: Vec<u8>,
+    pub compression_algorithm_count: Vec<u8>,
     /// Padding (2 bytes): The sender MUST set this to 0, and the receiver MUST ignore it on receipt.
-    padding: Vec<u8>,
+    pub padding: Vec<u8>,
     /// Flags (4 bytes)
-    flags: Vec<u8>,
+    pub flags: Vec<u8>,
     /// CompressionAlgorithms (variable): An array of 16-bit integer IDs specifying
     /// the supported compression algorithms. These IDs MUST be in order of preference
     /// from most to least. The following IDs are defined.
-    compression_algorithms: Vec<Vec<u8>>,
+    pub compression_algorithms: Vec<Vec<u8>>,
 }
 
 impl CompressionCapabilities {
@@ -225,7 +286,7 @@ impl CompressionCapabilities {
 pub struct NetnameNegotiateContextId {
     /// NetName (variable): A Unicode string containing the server name and specified
     /// by the client application. e.g. 'tom'
-    net_name: Vec<u8>,
+    pub net_name: Vec<u8>,
 }
 
 impl NetnameNegotiateContextId {
@@ -243,7 +304,7 @@ impl NetnameNegotiateContextId {
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct TransportCapabilities {
     /// Reserved (4 bytes): This field SHOULD be set to zero and is ignored on receipt.
-    reserved: Vec<u8>,
+    pub reserved: Vec<u8>,
 }
 
 impl TransportCapabilities {
@@ -271,7 +332,7 @@ impl RDMATransformIds {
     pub fn unpack_byte_code(&self) -> Vec<u8> {
         match self {
             RDMATransformIds::RDMATransformNone => b"\x00\x00".to_vec(),
-            RDMATransformIds::RDMATransformEncryption => b"\x00\x01".to_vec(),
+            RDMATransformIds::RDMATransformEncryption => b"\x01\x00".to_vec(),
         }
     }
 }
@@ -283,16 +344,16 @@ impl RDMATransformIds {
 pub struct RDMATransformCapabilities {
     /// TransformCount (2 bytes): The number of elements in RDMATransformIds array.
     /// This value MUST be greater than 0.
-    transform_count: Vec<u8>,
+    pub transform_count: Vec<u8>,
     /// Reserved1 (2 bytes): This field MUST NOT be used and MUST be reserved.
     /// The sender MUST set this to 0, and the receiver MUST ignore it on receipt.
-    reserved1: Vec<u8>,
+    pub reserved1: Vec<u8>,
     /// Reserved2 (4 bytes): This field MUST NOT be used and MUST be reserved.
     /// The sender MUST set this to 0, and the receiver MUST ignore it on receipt.
-    reserved2: Vec<u8>,
+    pub reserved2: Vec<u8>,
     /// RDMATransformIds (variable): An array of 16-bit integer IDs specifying
     /// the supported RDMA transforms. The following IDs are defined.
-    rdma_transform_ids: Vec<Vec<u8>>,
+    pub rdma_transform_ids: Vec<Vec<u8>>,
 }
 
 impl RDMATransformCapabilities {
@@ -301,7 +362,7 @@ impl RDMATransformCapabilities {
         RDMATransformCapabilities {
             transform_count: Vec::new(),
             reserved1: b"\x00\x00".to_vec(),
-            reserved2: b"\x00\x00".to_vec(),
+            reserved2: b"\x00\x00\x00\x00".to_vec(),
             rdma_transform_ids: Vec::new(),
         }
     }
