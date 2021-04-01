@@ -57,19 +57,21 @@ pub fn decode_target_info(
     end_of_message: usize,
 ) -> Vec<AvPair> {
     let mut av_pairs: Vec<AvPair> = Vec::new();
-    while offset < end_of_message - 4 {
+    while offset < end_of_message - 2 {
         let mut target_info = AvPair::default();
         target_info.av_id = Some(AvId::map_byte_code_to_av_id(
             ntlmssp_response[offset..offset + 2].to_vec(),
         ));
         target_info.av_len = ntlmssp_response[offset + 2..offset + 4].to_vec();
 
-        let value_size = convert_byte_array_to_int(target_info.av_len.clone(), false);
-        target_info.value = ntlmssp_response[offset + 4..offset + 4 + value_size as usize].to_vec();
-
-        av_pairs.push(target_info);
-
-        offset = offset + 4 + value_size as usize;
+        if offset < end_of_message - 3 {
+            let value_size = convert_byte_array_to_int(target_info.av_len.clone(), false);
+            target_info.value = ntlmssp_response[offset + 4..offset + 4 + value_size as usize].to_vec();
+            offset = offset + 4 + value_size as usize;
+            av_pairs.push(target_info);
+        } else {
+            break;
+        }
     }
 
     av_pairs
