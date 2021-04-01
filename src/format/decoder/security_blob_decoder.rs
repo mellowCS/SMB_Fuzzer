@@ -66,7 +66,8 @@ pub fn decode_target_info(
 
         if offset < end_of_message - 3 {
             let value_size = convert_byte_array_to_int(target_info.av_len.clone(), false);
-            target_info.value = ntlmssp_response[offset + 4..offset + 4 + value_size as usize].to_vec();
+            target_info.value =
+                ntlmssp_response[offset + 4..offset + 4 + value_size as usize].to_vec();
             offset = offset + 4 + value_size as usize;
             av_pairs.push(target_info);
         } else {
