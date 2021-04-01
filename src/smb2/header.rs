@@ -90,7 +90,7 @@ pub enum Flags {
     RelatedOperations,
     Signed,
     PriorityMask,
-    DFSOperations,
+    DfsOperations,
     ReplayOperation,
     NoFlags,
 }
@@ -104,7 +104,7 @@ impl Flags {
             Flags::RelatedOperations => b"\x04\x00\x00\x00".to_vec(),
             Flags::Signed => b"\x08\x00\x00\x00".to_vec(),
             Flags::PriorityMask => b"\x70\x00\x00\x00".to_vec(),
-            Flags::DFSOperations => b"\x10\x00\x00\x00".to_vec(),
+            Flags::DfsOperations => b"\x10\x00\x00\x00".to_vec(),
             Flags::ReplayOperation => b"\x20\x00\x00\x00".to_vec(),
             Flags::NoFlags => b"\x00\x00\x00\x00".to_vec(),
         }

@@ -1,7 +1,7 @@
 //! The AUTHENTICATE_MESSAGE defines an NTLM authenticate message that is sent from the client
 //! to the server after the CHALLENGE_MESSAGE is processed by the client.
 
-use super::{AVPair, DomainNameFields, Version, WorkstationFields};
+use super::{AvPair, DomainNameFields, Version, WorkstationFields};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Authenticate {
@@ -225,7 +225,7 @@ pub struct Payload {
     /// NtChallengeResponse (variable): An NTLM_RESPONSE structure or NTLMv2_RESPONSE structure that contains the
     /// computed NT response to the challenge. If NTLM v2 authentication is configured, NtChallengeResponse
     /// MUST be an NTLMv2_RESPONSE. Otherwise, it MUST be an NTLM_RESPONSE.
-    pub nt_challenge_response: NTLMv2Response,
+    pub nt_challenge_response: NtlmV2Response,
     /// DomainName (variable): The domain or computer name hosting the user account.
     /// DomainName MUST be encoded in the negotiated character set.
     pub domain_name: Vec<u8>,
@@ -244,7 +244,7 @@ impl Payload {
     pub fn default() -> Self {
         Payload {
             lm_challenge_response: Vec::new(),
-            nt_challenge_response: NTLMv2Response::default(),
+            nt_challenge_response: NtlmV2Response::default(),
             domain_name: Vec::new(),
             user_name: Vec::new(),
             workstation: Vec::new(),
@@ -254,26 +254,26 @@ impl Payload {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct NTLMv2Response {
+pub struct NtlmV2Response {
     /// Response (16 bytes): A 16-byte array of unsigned char that contains the
     /// client's NTChallengeResponse. Response corresponds to the NTProofStr variable.
     pub response: Vec<u8>,
     /// NTLMv2_CLIENT_CHALLENGE (variable): A variable-length byte array, that contains
     /// the ClientChallenge. ChallengeFromClient corresponds to the temp variable.
-    pub ntlmv2_client_challenge: NTLMv2ClientChallenge,
+    pub ntlmv2_client_challenge: NtlmV2ClientChallenge,
 }
 
-impl NTLMv2Response {
+impl NtlmV2Response {
     pub fn default() -> Self {
-        NTLMv2Response {
+        NtlmV2Response {
             response: Vec::new(),
-            ntlmv2_client_challenge: NTLMv2ClientChallenge::default(),
+            ntlmv2_client_challenge: NtlmV2ClientChallenge::default(),
         }
     }
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct NTLMv2ClientChallenge {
+pub struct NtlmV2ClientChallenge {
     /// RespType (1 byte): An 8-bit unsigned char that
     /// contains the current version of the challenge response type.
     /// This field MUST be 0x01.
@@ -301,12 +301,12 @@ pub struct NTLMv2ClientChallenge {
     /// AvPairs (variable): A byte array that contains a sequence of
     /// AV_PAIR structures. The sequence contains the server-naming
     /// context and is terminated by an AV_PAIR structure with an AvId field of MsvAvEOL.
-    pub av_pairs: Vec<AVPair>,
+    pub av_pairs: Vec<AvPair>,
 }
 
-impl NTLMv2ClientChallenge {
+impl NtlmV2ClientChallenge {
     pub fn default() -> Self {
-        NTLMv2ClientChallenge {
+        NtlmV2ClientChallenge {
             resp_type: vec![1],
             hi_resp_type: vec![1],
             reserved1: vec![0; 2],

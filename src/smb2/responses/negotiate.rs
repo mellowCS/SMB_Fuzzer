@@ -106,11 +106,11 @@ impl Negotiate {
 /// The server SHOULD set this field to one of the following values.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum DialectRevision {
-    SMB202,
-    SMB21,
-    SMB30,
-    SMB302,
-    SMB311,
+    Smb202,
+    Smb21,
+    Smb30,
+    Smb302,
+    Smb311,
     Wildcard,
 }
 
@@ -118,11 +118,11 @@ impl DialectRevision {
     /// Unpacks the byte code for the dialect revision.
     pub fn unpack_byte_code(&self) -> Vec<u8> {
         match self {
-            DialectRevision::SMB202 => b"\x02\x02".to_vec(),
-            DialectRevision::SMB21 => b"\x10\x02".to_vec(),
-            DialectRevision::SMB30 => b"\x00\x03".to_vec(),
-            DialectRevision::SMB302 => b"\x02\x03".to_vec(),
-            DialectRevision::SMB311 => b"\x11\x03".to_vec(),
+            DialectRevision::Smb202 => b"\x02\x02".to_vec(),
+            DialectRevision::Smb21 => b"\x10\x02".to_vec(),
+            DialectRevision::Smb30 => b"\x00\x03".to_vec(),
+            DialectRevision::Smb302 => b"\x02\x03".to_vec(),
+            DialectRevision::Smb311 => b"\x11\x03".to_vec(),
             DialectRevision::Wildcard => b"\xff\x02".to_vec(),
         }
     }
@@ -130,11 +130,11 @@ impl DialectRevision {
     /// Maps the byte code of a incoming response to the corresponding dialect.
     pub fn map_byte_code_to_dialect(byte_code: Vec<u8>) -> DialectRevision {
         match byte_code.as_slice() {
-            [2, 2] => DialectRevision::SMB202,
-            [16, 2] => DialectRevision::SMB21,
-            [0, 3] => DialectRevision::SMB30,
-            [2, 3] => DialectRevision::SMB302,
-            [17, 3] => DialectRevision::SMB311,
+            [2, 2] => DialectRevision::Smb202,
+            [16, 2] => DialectRevision::Smb21,
+            [0, 3] => DialectRevision::Smb30,
+            [2, 3] => DialectRevision::Smb302,
+            [17, 3] => DialectRevision::Smb311,
             [255, 2] => DialectRevision::Wildcard,
             _ => panic!("Invalid dialect."),
         }

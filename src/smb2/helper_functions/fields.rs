@@ -66,9 +66,9 @@ impl SecurityMode {
 ///     - When set, indicates that the client supports encryption.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Capabilities {
-    GlobalCapDFS,
+    GlobalCapDfs,
     GlobalCapLeasing,
-    GlobalCapLargeMTU,
+    GlobalCapLargeMtu,
     GlobalCapMultiChannel,
     GlobalCapPersistentHandles,
     GlobalCapDirectoryLeasing,
@@ -80,9 +80,9 @@ impl Capabilities {
     /// Return the corresponding byte code (4 bytes) for each capability.
     pub fn unpack_byte_code(&self) -> u8 {
         match self {
-            Capabilities::GlobalCapDFS => 0x00000001,
+            Capabilities::GlobalCapDfs => 0x00000001,
             Capabilities::GlobalCapLeasing => 0x00000002,
-            Capabilities::GlobalCapLargeMTU => 0x00000004,
+            Capabilities::GlobalCapLargeMtu => 0x00000004,
             Capabilities::GlobalCapMultiChannel => 0x00000008,
             Capabilities::GlobalCapPersistentHandles => 0x00000010,
             Capabilities::GlobalCapDirectoryLeasing => 0x00000020,
@@ -103,9 +103,9 @@ impl Capabilities {
     /// Shortcut for returning all capabilities as a sum.
     pub fn return_all_capabilities() -> Vec<u8> {
         Capabilities::return_sum_of_chosen_capabilities(vec![
-            Capabilities::GlobalCapDFS,
+            Capabilities::GlobalCapDfs,
             Capabilities::GlobalCapLeasing,
-            Capabilities::GlobalCapLargeMTU,
+            Capabilities::GlobalCapLargeMtu,
             Capabilities::GlobalCapMultiChannel,
             Capabilities::GlobalCapPersistentHandles,
             Capabilities::GlobalCapDirectoryLeasing,
@@ -121,7 +121,7 @@ impl Capabilities {
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum OplockLevel {
     None,
-    II,
+    Level2,
     Exclusive,
     Batch,
     Lease,
@@ -132,7 +132,7 @@ impl OplockLevel {
     pub fn unpack_byte_code(&self) -> Vec<u8> {
         match self {
             OplockLevel::None => b"\x00".to_vec(),
-            OplockLevel::II => b"\x01".to_vec(),
+            OplockLevel::Level2 => b"\x01".to_vec(),
             OplockLevel::Exclusive => b"\x08".to_vec(),
             OplockLevel::Batch => b"\x09".to_vec(),
             OplockLevel::Lease => b"\xff".to_vec(),
@@ -147,9 +147,9 @@ mod tests {
     #[test]
     fn test_return_sum_of_chosen_capabilities() {
         let chosen = vec![
-            Capabilities::GlobalCapDFS,
+            Capabilities::GlobalCapDfs,
             Capabilities::GlobalCapLeasing,
-            Capabilities::GlobalCapLargeMTU,
+            Capabilities::GlobalCapLargeMtu,
             Capabilities::GlobalCapMultiChannel,
             Capabilities::GlobalCapPersistentHandles,
             Capabilities::GlobalCapDirectoryLeasing,

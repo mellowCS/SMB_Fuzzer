@@ -2,11 +2,11 @@ use ntlmssp::MessageType;
 
 use crate::{
     gss,
-    ntlmssp::{self, authenticate::NTLMv2ClientChallenge, AVPair},
+    ntlmssp::{self, authenticate::NtlmV2ClientChallenge, AvPair},
 };
 
 /// Serializes the challenge's target info.
-pub fn encode_challenge_target_info(target_info: Vec<AVPair>, proof: bool) -> Vec<u8> {
+pub fn encode_challenge_target_info(target_info: Vec<AvPair>, proof: bool) -> Vec<u8> {
     let mut encoded: Vec<u8> = Vec::new();
 
     for av_pair in target_info.into_iter() {
@@ -128,7 +128,7 @@ pub fn encode_authenticate_message(mut message: ntlmssp::authenticate::Authentic
 }
 
 /// Serializes the ntlm client challenge.
-pub fn serialize_ntlm_challenge(mut ntlm_challenge: NTLMv2ClientChallenge) -> Vec<u8> {
+pub fn serialize_ntlm_challenge(mut ntlm_challenge: NtlmV2ClientChallenge) -> Vec<u8> {
     let mut encoded: Vec<u8> = Vec::new();
 
     encoded.append(&mut ntlm_challenge.resp_type);

@@ -25,7 +25,7 @@ pub fn build_sync_header(
     header.generic.reserved = vec![0; 2];
     header.generic.command = command.unpack_byte_code();
     header.generic.credit = credit_request.to_le_bytes().to_vec();
-    header.generic.flags = header::Flags::DFSOperations.unpack_byte_code();
+    header.generic.flags = header::Flags::DfsOperations.unpack_byte_code();
     header.generic.next_command = vec![0; 4];
     header.generic.message_id = message_id.to_le_bytes().to_vec();
     header.tree_id = match tree_id {

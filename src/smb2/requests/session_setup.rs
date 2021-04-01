@@ -96,14 +96,14 @@ impl Flags {
 /// are unused at present and SHOULD be treated as reserved.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Capabilities {
-    GlobalCapDFS,
+    GlobalCapDfs,
 }
 
 impl Capabilities {
     /// Unpack the byte code of session setup capabilities.
     pub fn unpack_byte_code(&self) -> Vec<u8> {
         match self {
-            Capabilities::GlobalCapDFS => b"\x00\x00\x00\x01".to_vec(),
+            Capabilities::GlobalCapDfs => b"\x00\x00\x00\x01".to_vec(),
         }
     }
 }

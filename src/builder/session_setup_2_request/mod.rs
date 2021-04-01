@@ -36,7 +36,7 @@ pub fn build_default_session_setup_2_request_body(
     session_setup.flags = requests::session_setup::Flags::Zero.unpack_byte_code();
     session_setup.security_mode = fields::SecurityMode::NegotiateSigningEnabled.unpack_byte_code(1);
     session_setup.capabilities =
-        requests::session_setup::Capabilities::GlobalCapDFS.unpack_byte_code();
+        requests::session_setup::Capabilities::GlobalCapDfs.unpack_byte_code();
     session_setup.channel = vec![0; 4];
     session_setup.security_buffer_offset = SECURITY_BUFFER_OFFSET.to_vec();
     session_setup.security_buffer_length = SECURITY_BUFFER_LENGTH.to_vec();

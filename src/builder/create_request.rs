@@ -43,7 +43,7 @@ pub fn build_default_create_request_body() -> requests::create::Create {
     create.impersonation_level = ImpersonationLevel::Impersonation.unpack_byte_code();
     create.desired_access = FileAccessMask::return_sum_of_chosen_file_access_masks(vec![
         FileAccessMask::ReadData,
-        FileAccessMask::ReadEA,
+        FileAccessMask::ReadEa,
         FileAccessMask::ReadAttributes,
         FileAccessMask::ReadControl,
         FileAccessMask::Synchronize,

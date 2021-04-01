@@ -207,17 +207,17 @@ impl BlobData {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct SIDArrayData {
+pub struct SidArrayData {
     /// SidAttrCount (2 bytes): Number of SID_ATTR_DATA elements in SidAttrList array.
     sid_attr_count: Vec<u8>,
     /// SidAttrList (variable): An array with SidAttrCount number of SID_ATTR_DATA elements.
     sid_attr_list: Vec<SIDAttrData>,
 }
 
-impl SIDArrayData {
+impl SidArrayData {
     /// Creates a new instance of SID Array Data.
     pub fn default() -> Self {
-        SIDArrayData {
+        SidArrayData {
             sid_attr_count: Vec::new(),
             sid_attr_list: Vec::new(),
         }
@@ -226,7 +226,7 @@ impl SIDArrayData {
 
 /// Contains information about privileges with a unique id.
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct LUIDAttrData {
+pub struct LuidAttrData {
     /// Luid (8 bytes): Locally unique identifier
     luid: Vec<u8>,
     /// Attr (4 bytes): LUID attributes.
@@ -237,10 +237,10 @@ pub struct LUIDAttrData {
     attr: Vec<u8>,
 }
 
-impl LUIDAttrData {
+impl LuidAttrData {
     /// Creates a new instance of LUID Attr Data.
     pub fn default() -> Self {
-        LUIDAttrData {
+        LuidAttrData {
             luid: Vec::new(),
             attr: Vec::new(),
         }

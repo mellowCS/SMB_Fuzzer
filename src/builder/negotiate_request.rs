@@ -42,11 +42,11 @@ pub fn build_default_negotiate_request() -> (header::SyncHeader, requests::negot
 /// Builds the working default dialect list.
 pub fn build_default_dialect_list() -> Vec<Vec<u8>> {
     vec![
-        Dialects::SMB202.unpack_byte_code(),
-        Dialects::SMB21.unpack_byte_code(),
-        Dialects::SMB30.unpack_byte_code(),
-        Dialects::SMB302.unpack_byte_code(),
-        Dialects::SMB311.unpack_byte_code(),
+        Dialects::Smb202.unpack_byte_code(),
+        Dialects::Smb21.unpack_byte_code(),
+        Dialects::Smb30.unpack_byte_code(),
+        Dialects::Smb302.unpack_byte_code(),
+        Dialects::Smb311.unpack_byte_code(),
     ]
 }
 
@@ -89,8 +89,8 @@ pub fn build_default_encryption_context() -> NegotiateContext {
 
     encrypt_caps.cipher_count = b"\x02\x00".to_vec();
     encrypt_caps.ciphers = vec![
-        Ciphers::AES128GCM.unpack_byte_code(),
-        Ciphers::AES128CCM.unpack_byte_code(),
+        Ciphers::Aes128Gcm.unpack_byte_code(),
+        Ciphers::Aes128Ccm.unpack_byte_code(),
     ];
 
     let encrypt_context = ContextType::EncryptionCapabilities(encrypt_caps);
@@ -111,9 +111,9 @@ pub fn build_default_compression_context() -> NegotiateContext {
     compress_caps.compression_algorithm_count = b"\x03\x00".to_vec();
     compress_caps.flags = vec![0; 4];
     compress_caps.compression_algorithms = vec![
-        CompressionAlgorithms::LZ77.unpack_byte_code(),
-        CompressionAlgorithms::LZ77Huffman.unpack_byte_code(),
-        CompressionAlgorithms::LZNT1.unpack_byte_code(),
+        CompressionAlgorithms::Lz77.unpack_byte_code(),
+        CompressionAlgorithms::Lz77Huffman.unpack_byte_code(),
+        CompressionAlgorithms::Lznt1.unpack_byte_code(),
     ];
 
     let compress_context = ContextType::CompressionCapabilities(compress_caps);

@@ -86,33 +86,33 @@ impl Negotiate {
 /// Represents all supported dialects
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Dialects {
-    SMB202,
-    SMB21,
-    SMB30,
-    SMB302,
-    SMB311,
+    Smb202,
+    Smb21,
+    Smb30,
+    Smb302,
+    Smb311,
 }
 
 impl Dialects {
     /// Return the corresponding byte code (4 bytes) for each dialect.
     pub fn unpack_byte_code(&self) -> Vec<u8> {
         match self {
-            Dialects::SMB202 => b"\x02\x02".to_vec(),
-            Dialects::SMB21 => b"\x10\x02".to_vec(),
-            Dialects::SMB30 => b"\x00\x03".to_vec(),
-            Dialects::SMB302 => b"\x02\x03".to_vec(),
-            Dialects::SMB311 => b"\x11\x03".to_vec(),
+            Dialects::Smb202 => b"\x02\x02".to_vec(),
+            Dialects::Smb21 => b"\x10\x02".to_vec(),
+            Dialects::Smb30 => b"\x00\x03".to_vec(),
+            Dialects::Smb302 => b"\x02\x03".to_vec(),
+            Dialects::Smb311 => b"\x11\x03".to_vec(),
         }
     }
 
     /// Return the dialect array of all SMB2 dialects as a byte sequence.
     pub fn get_all_dialects() -> Vec<Vec<u8>> {
         vec![
-            Dialects::SMB202.unpack_byte_code(),
-            Dialects::SMB21.unpack_byte_code(),
-            Dialects::SMB30.unpack_byte_code(),
-            Dialects::SMB302.unpack_byte_code(),
-            Dialects::SMB311.unpack_byte_code(),
+            Dialects::Smb202.unpack_byte_code(),
+            Dialects::Smb21.unpack_byte_code(),
+            Dialects::Smb30.unpack_byte_code(),
+            Dialects::Smb302.unpack_byte_code(),
+            Dialects::Smb311.unpack_byte_code(),
         ]
     }
 }

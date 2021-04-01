@@ -3,7 +3,7 @@ use crate::smb2::{
         fields::SecurityMode,
         negotiate_context::{
             CompressionCapabilities, ContextType, EncryptionCapabilities, NegotiateContext,
-            NetnameNegotiateContextId, PreauthIntegrityCapabilities, RDMATransformCapabilities,
+            NetnameNegotiateContextId, PreauthIntegrityCapabilities, RdmaTransformCapabilities,
             TransportCapabilities,
         },
     },
@@ -41,7 +41,7 @@ pub fn decode_negotiate_response_body(encoded_body: Vec<u8>) -> responses::negot
             as usize;
     negotiate_response.buffer = encoded_body[64..buffer_end_index].to_vec();
 
-    if let DialectRevision::SMB311 = negotiate_response.dialect_revision.clone().unwrap() {
+    if let DialectRevision::Smb311 = negotiate_response.dialect_revision.clone().unwrap() {
         // The negotiate contexts need to be 8 byte aligned. Therefore, the optional padding size needs to be calculated from
         // from the index of the last buffer byte.
         let padding_end_index =
@@ -122,9 +122,9 @@ pub fn decode_generic_context(encoded_body: &[u8], start_index: usize) -> Negoti
             decode_transport_context(&mut transport, encoded_body, start_index + 8);
             neg_context.data = Some(ContextType::TransportCapabilities(transport));
         }
-        ContextType::RDMATransformCapabilities(mut rdma) => {
+        ContextType::RdmaTransformCapabilities(mut rdma) => {
             decode_rdma_transform_context(&mut rdma, encoded_body, start_index + 8);
-            neg_context.data = Some(ContextType::RDMATransformCapabilities(rdma));
+            neg_context.data = Some(ContextType::RdmaTransformCapabilities(rdma));
         }
     }
 
@@ -202,7 +202,7 @@ pub fn decode_transport_context(
 
 /// Decodes the RDMA Transform Capabilities
 pub fn decode_rdma_transform_context(
-    rdma_cap: &mut RDMATransformCapabilities,
+    rdma_cap: &mut RdmaTransformCapabilities,
     encoded_body: &[u8],
     start_index: usize,
 ) {
@@ -254,7 +254,7 @@ mod tests {
         );
 
         assert_eq!(
-            Some(DialectRevision::SMB311),
+            Some(DialectRevision::Smb311),
             decoded_negotiate_response.dialect_revision
         );
 

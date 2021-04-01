@@ -105,7 +105,7 @@ impl Create {
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum OplockLevel {
     None,
-    II,
+    Level2,
     Exclusive,
     Batch,
     Lease,
@@ -116,7 +116,7 @@ impl OplockLevel {
     pub fn unpack_byte_code(&self) -> Vec<u8> {
         match self {
             OplockLevel::None => b"\x00".to_vec(),
-            OplockLevel::II => b"\x01".to_vec(),
+            OplockLevel::Level2 => b"\x01".to_vec(),
             OplockLevel::Exclusive => b"\x08".to_vec(),
             OplockLevel::Batch => b"\x09".to_vec(),
             OplockLevel::Lease => b"\xff".to_vec(),

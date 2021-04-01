@@ -1,7 +1,7 @@
 use crate::smb2::{
     helper_functions::negotiate_context::{
         CompressionCapabilities, ContextType, EncryptionCapabilities, NegotiateContext,
-        NetnameNegotiateContextId, PreauthIntegrityCapabilities, RDMATransformCapabilities,
+        NetnameNegotiateContextId, PreauthIntegrityCapabilities, RdmaTransformCapabilities,
         TransportCapabilities,
     },
     requests::negotiate::Negotiate,
@@ -72,7 +72,7 @@ pub fn navigate_to_corresponding_serializer(context_type: &ContextType) -> Vec<u
         ContextType::TransportCapabilities(transport) => {
             serialize_transport_capabilities(transport)
         }
-        ContextType::RDMATransformCapabilities(rdma) => serialize_rdma_transform_capabilities(rdma),
+        ContextType::RdmaTransformCapabilities(rdma) => serialize_rdma_transform_capabilities(rdma),
     }
 }
 
@@ -128,7 +128,7 @@ pub fn serialize_transport_capabilities(transport: &TransportCapabilities) -> Ve
 }
 
 /// Serializes rdma transform capabilities.
-pub fn serialize_rdma_transform_capabilities(rdma: &RDMATransformCapabilities) -> Vec<u8> {
+pub fn serialize_rdma_transform_capabilities(rdma: &RdmaTransformCapabilities) -> Vec<u8> {
     let mut serialized_rdma_transform: Vec<u8> = Vec::new();
 
     serialized_rdma_transform.append(&mut rdma.transform_count.clone());
@@ -157,7 +157,7 @@ mod tests {
         compress: CompressionCapabilities,
         netname: NetnameNegotiateContextId,
         transport: TransportCapabilities,
-        rdma: RDMATransformCapabilities,
+        rdma: RdmaTransformCapabilities,
         negotiate_context_encrypt: NegotiateContext,
         negotiate_context_compress: NegotiateContext,
     }
@@ -184,18 +184,18 @@ mod tests {
             compress.flags =
                 negotiate_context::Flags::CompressionCapabilitiesFlagNone.unpack_byte_code();
             compress.compression_algorithms = vec![
-                negotiate_context::CompressionAlgorithms::LZNT1.unpack_byte_code(),
-                negotiate_context::CompressionAlgorithms::LZ77.unpack_byte_code(),
-                negotiate_context::CompressionAlgorithms::LZ77Huffman.unpack_byte_code(),
+                negotiate_context::CompressionAlgorithms::Lznt1.unpack_byte_code(),
+                negotiate_context::CompressionAlgorithms::Lz77.unpack_byte_code(),
+                negotiate_context::CompressionAlgorithms::Lz77Huffman.unpack_byte_code(),
             ];
 
             let mut netname = NetnameNegotiateContextId::default();
             netname.net_name = b"\x31\x00\x39\x00\x32\x00\x2e\x00\x31\x00\x36\x00\x38\x00\x2e\x00\x31\x00\x37\x00\x31\x00".to_vec();
 
-            let mut rdma = RDMATransformCapabilities::default();
+            let mut rdma = RdmaTransformCapabilities::default();
             rdma.transform_count = b"\x01\x00".to_vec();
             rdma.rdma_transform_ids =
-                vec![negotiate_context::RDMATransformIds::RDMATransformNone.unpack_byte_code()];
+                vec![negotiate_context::RdmaTransformIds::RdmaTransformNone.unpack_byte_code()];
 
             let mut negotiate_context_encrypt = NegotiateContext::default();
             let encrypt_context = ContextType::EncryptionCapabilities(encrypt.clone());
@@ -236,7 +236,7 @@ mod tests {
         negotiate_request.negotiate_context_count = vec![2, 0];
         negotiate_request
             .dialects
-            .push(requests::negotiate::Dialects::SMB311.unpack_byte_code());
+            .push(requests::negotiate::Dialects::Smb311.unpack_byte_code());
         negotiate_request.padding = vec![0; 2];
         negotiate_request.negotiate_context_list = vec![
             setup.negotiate_context_encrypt,

@@ -155,7 +155,7 @@ impl WorkstationFields {
 /// When AV pairs are specified, MsvAvEOL MUST be the last item specified.
 /// All other AV pairs, if present, can be specified in any order.
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct AVPair {
+pub struct AvPair {
     /// AvId (2 bytes): A 16-bit unsigned integer that defines the information
     /// type in the Value field. The contents of this field MUST be a value from
     /// the following table. The corresponding Value field in this AV_PAIR MUST
@@ -172,10 +172,10 @@ pub struct AVPair {
     pub value: Vec<u8>,
 }
 
-impl AVPair {
+impl AvPair {
     /// Creates a new AV pair instance.
     pub fn default() -> Self {
-        AVPair {
+        AvPair {
             av_id: None,
             av_len: Vec::new(),
             value: Vec::new(),

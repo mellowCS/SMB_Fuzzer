@@ -1,6 +1,6 @@
 use crate::{
     format::convert_byte_array_to_int,
-    ntlmssp::{self, challenge::Challenge, AVPair, AvId, MessageType},
+    ntlmssp::{self, challenge::Challenge, AvPair, AvId, MessageType},
 };
 
 /// Decodes the NTLMSSP security response body.
@@ -55,10 +55,10 @@ pub fn decode_target_info(
     ntlmssp_response: Vec<u8>,
     mut offset: usize,
     end_of_message: usize,
-) -> Vec<AVPair> {
-    let mut av_pairs: Vec<AVPair> = Vec::new();
+) -> Vec<AvPair> {
+    let mut av_pairs: Vec<AvPair> = Vec::new();
     while offset < end_of_message - 4 {
-        let mut target_info = AVPair::default();
+        let mut target_info = AvPair::default();
         target_info.av_id = Some(AvId::map_byte_code_to_av_id(
             ntlmssp_response[offset..offset + 2].to_vec(),
         ));
@@ -88,7 +88,7 @@ mod tests {
     struct Setup {
         complete_byte_code: Vec<u8>,
         ntlm_byte_code: Vec<u8>,
-        target_info: Vec<AVPair>,
+        target_info: Vec<AvPair>,
     }
 
     impl Setup {
@@ -108,35 +108,35 @@ mod tests {
                                       \x00\x07\x00\x08\x00\x60\x16\xad\x6d\x47\x21\xd7\x01\x00\x00\x00\
                                       \x00".to_vec();
 
-            let mut first_target = AVPair::default();
+            let mut first_target = AvPair::default();
             first_target.av_id = Some(AvId::MsvAvNbDomainName);
             first_target.av_len = b"\x16\x00".to_vec();
             first_target.value = b"\x52\x00\x41\x00\x53\x00\x50\x00\x42\x00\x45\
                                    \x00\x52\x00\x52\x00\x59\x00\x50\x00\x49\x00"
                 .to_vec();
-            let mut second_target = AVPair::default();
+            let mut second_target = AvPair::default();
             second_target.av_id = Some(AvId::MsvAvNbComputerName);
             second_target.av_len = first_target.av_len.clone();
             second_target.value = first_target.value.clone();
 
-            let mut third_target = AVPair::default();
+            let mut third_target = AvPair::default();
             third_target.av_id = Some(AvId::MsvAvDnsDomainName);
             third_target.av_len = b"\x02\x00".to_vec();
             third_target.value = b"\x00\x00".to_vec();
 
-            let mut fourth_target = AVPair::default();
+            let mut fourth_target = AvPair::default();
             fourth_target.av_id = Some(AvId::MsvAvDnsComputerName);
             fourth_target.av_len = first_target.av_len.clone();
             fourth_target.value = b"\x72\x00\x61\x00\x73\x00\x70\x00\x62\x00\x65\
                                     \x00\x72\x00\x72\x00\x79\x00\x70\x00\x69\x00"
                 .to_vec();
 
-            let mut fifth_target = AVPair::default();
+            let mut fifth_target = AvPair::default();
             fifth_target.av_id = Some(AvId::MsvAvTimeStamp);
             fifth_target.av_len = b"\x08\x00".to_vec();
             fifth_target.value = b"\x60\x16\xad\x6d\x47\x21\xd7\x01".to_vec();
 
-            let mut sixth_target = AVPair::default();
+            let mut sixth_target = AvPair::default();
             sixth_target.av_id = Some(AvId::MsvAvEOL);
             sixth_target.av_len = b"\x00\x00".to_vec();
 

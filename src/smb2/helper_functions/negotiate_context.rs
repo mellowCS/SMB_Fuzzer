@@ -11,7 +11,7 @@ pub enum ContextType {
     CompressionCapabilities(CompressionCapabilities),
     NetnameNegotiateContextId(NetnameNegotiateContextId),
     TransportCapabilities(TransportCapabilities),
-    RDMATransformCapabilities(RDMATransformCapabilities),
+    RdmaTransformCapabilities(RdmaTransformCapabilities),
 }
 
 impl ContextType {
@@ -23,7 +23,7 @@ impl ContextType {
             ContextType::CompressionCapabilities(_) => b"\x03\x00".to_vec(),
             ContextType::NetnameNegotiateContextId(_) => b"\x05\x00".to_vec(),
             ContextType::TransportCapabilities(_) => b"\x06\x00".to_vec(),
-            ContextType::RDMATransformCapabilities(_) => b"\x07\x00".to_vec(),
+            ContextType::RdmaTransformCapabilities(_) => b"\x07\x00".to_vec(),
         }
     }
 
@@ -38,7 +38,7 @@ impl ContextType {
                 3 => ContextType::CompressionCapabilities(CompressionCapabilities::default()),
                 5 => ContextType::NetnameNegotiateContextId(NetnameNegotiateContextId::default()),
                 6 => ContextType::TransportCapabilities(TransportCapabilities::default()),
-                7 => ContextType::RDMATransformCapabilities(RDMATransformCapabilities::default()),
+                7 => ContextType::RdmaTransformCapabilities(RdmaTransformCapabilities::default()),
                 _ => panic!("Invalid context type in parsed response."),
             }
         } else {
@@ -81,9 +81,9 @@ impl ContextType {
         }
     }
 
-    pub fn unpack_rdma_tansform(&self) -> RDMATransformCapabilities {
+    pub fn unpack_rdma_tansform(&self) -> RdmaTransformCapabilities {
         match self {
-            ContextType::RDMATransformCapabilities(rdma) => rdma.clone(),
+            ContextType::RdmaTransformCapabilities(rdma) => rdma.clone(),
             _ => panic!("Tried to unpack invalid Context Type."),
         }
     }
@@ -152,20 +152,20 @@ impl PreauthIntegrityCapabilities {
 /// of the array and least preferred cipher at the end of the array. The following IDs are defined.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Ciphers {
-    AES128CCM,
-    AES128GCM,
-    AES256CCM,
-    AES256GCM,
+    Aes128Ccm,
+    Aes128Gcm,
+    Aes256Ccm,
+    Aes256Gcm,
 }
 
 impl Ciphers {
     /// Unpacks the byte code of ciphers.
     pub fn unpack_byte_code(&self) -> Vec<u8> {
         match self {
-            Ciphers::AES128CCM => b"\x01\x00".to_vec(),
-            Ciphers::AES128GCM => b"\x02\x00".to_vec(),
-            Ciphers::AES256CCM => b"\x03\x00".to_vec(),
-            Ciphers::AES256GCM => b"\x04\x00".to_vec(),
+            Ciphers::Aes128Ccm => b"\x01\x00".to_vec(),
+            Ciphers::Aes128Gcm => b"\x02\x00".to_vec(),
+            Ciphers::Aes256Ccm => b"\x03\x00".to_vec(),
+            Ciphers::Aes256Gcm => b"\x04\x00".to_vec(),
         }
     }
 }
@@ -233,9 +233,9 @@ impl Flags {
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum CompressionAlgorithms {
     None,
-    LZNT1,
-    LZ77,
-    LZ77Huffman,
+    Lznt1,
+    Lz77,
+    Lz77Huffman,
     PatternV1,
 }
 
@@ -244,9 +244,9 @@ impl CompressionAlgorithms {
     pub fn unpack_byte_code(&self) -> Vec<u8> {
         match self {
             CompressionAlgorithms::None => b"\x00\x00".to_vec(),
-            CompressionAlgorithms::LZNT1 => b"\x01\x00".to_vec(),
-            CompressionAlgorithms::LZ77 => b"\x02\x00".to_vec(),
-            CompressionAlgorithms::LZ77Huffman => b"\x03\x00".to_vec(),
+            CompressionAlgorithms::Lznt1 => b"\x01\x00".to_vec(),
+            CompressionAlgorithms::Lz77 => b"\x02\x00".to_vec(),
+            CompressionAlgorithms::Lz77Huffman => b"\x03\x00".to_vec(),
             CompressionAlgorithms::PatternV1 => b"\x04\x00".to_vec(),
         }
     }
@@ -322,17 +322,17 @@ impl TransportCapabilities {
 /// *RDMA Transform Encryption*:
 ///     - Encryption of data sent over RMDA.
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub enum RDMATransformIds {
-    RDMATransformNone,
-    RDMATransformEncryption,
+pub enum RdmaTransformIds {
+    RdmaTransformNone,
+    RdmaTransformEncryption,
 }
 
-impl RDMATransformIds {
+impl RdmaTransformIds {
     /// Unpacks the byte code of RDMA transform ids.
     pub fn unpack_byte_code(&self) -> Vec<u8> {
         match self {
-            RDMATransformIds::RDMATransformNone => b"\x00\x00".to_vec(),
-            RDMATransformIds::RDMATransformEncryption => b"\x01\x00".to_vec(),
+            RdmaTransformIds::RdmaTransformNone => b"\x00\x00".to_vec(),
+            RdmaTransformIds::RdmaTransformEncryption => b"\x01\x00".to_vec(),
         }
     }
 }
@@ -341,7 +341,7 @@ impl RDMATransformIds {
 /// SMB2 NEGOTIATE request by the client to indicate the transforms
 /// supported when data is sent over RDMA.
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct RDMATransformCapabilities {
+pub struct RdmaTransformCapabilities {
     /// TransformCount (2 bytes): The number of elements in RDMATransformIds array.
     /// This value MUST be greater than 0.
     pub transform_count: Vec<u8>,
@@ -356,10 +356,10 @@ pub struct RDMATransformCapabilities {
     pub rdma_transform_ids: Vec<Vec<u8>>,
 }
 
-impl RDMATransformCapabilities {
+impl RdmaTransformCapabilities {
     /// Creates a new RDMATransformCapabilities instance.
     pub fn default() -> Self {
-        RDMATransformCapabilities {
+        RdmaTransformCapabilities {
             transform_count: Vec::new(),
             reserved1: b"\x00\x00".to_vec(),
             reserved2: b"\x00\x00\x00\x00".to_vec(),

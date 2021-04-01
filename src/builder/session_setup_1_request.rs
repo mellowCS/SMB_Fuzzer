@@ -25,7 +25,7 @@ pub fn build_default_session_setup_1_request_body() -> requests::session_setup::
     session_req.flags = vec![0];
     session_req.security_mode = fields::SecurityMode::NegotiateSigningEnabled.unpack_byte_code(1);
     session_req.capabilities = fields::Capabilities::return_sum_of_chosen_capabilities(vec![
-        fields::Capabilities::GlobalCapDFS,
+        fields::Capabilities::GlobalCapDfs,
     ]);
     session_req.channel = vec![0; 4];
     session_req.security_buffer_offset = DEFAULT_BUFFER_OFFSET.to_vec();

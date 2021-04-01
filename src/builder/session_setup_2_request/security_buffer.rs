@@ -1,9 +1,9 @@
-use ntlmssp::{AVPair, AvId};
+use ntlmssp::{AvPair, AvId};
 
 use crate::{
     format::encoder::security_blob_encoder::encode_authenticate_blob,
     gss,
-    ntlmssp::{self, authenticate::NTLMv2Response, negotiate_flags::NegotiateFlags, MessageType},
+    ntlmssp::{self, authenticate::NtlmV2Response, negotiate_flags::NegotiateFlags, MessageType},
 };
 
 const LM_CHALLENGE_RESPONSE_OFFSET: &[u8; 4] = b"\x58\x00\x00\x00";
@@ -107,7 +107,7 @@ pub fn build_authenticate_message(
 }
 
 /// Calculates the size of the ntlmv2 challenge and returns it as a 2 byte little endian vector.
-pub fn calculate_ntlmv2_challenge_size(ntlmv2_response: &NTLMv2Response) -> Vec<u8> {
+pub fn calculate_ntlmv2_challenge_size(ntlmv2_response: &NtlmV2Response) -> Vec<u8> {
     let mut size: u16 = 44;
     for pair in ntlmv2_response.ntlmv2_client_challenge.av_pairs.iter() {
         size += (4 + pair.value.len()) as u16;
@@ -117,48 +117,48 @@ pub fn calculate_ntlmv2_challenge_size(ntlmv2_response: &NTLMv2Response) -> Vec<
 }
 
 /// Builds the NTLMv2 client challenge.
-pub fn build_ntlmv2_response(server_time_stamp: Vec<u8>) -> NTLMv2Response {
-    let mut response = NTLMv2Response::default();
+pub fn build_ntlmv2_response(server_time_stamp: Vec<u8>) -> NtlmV2Response {
+    let mut response = NtlmV2Response::default();
     response.ntlmv2_client_challenge.time_stamp = server_time_stamp.clone();
-    let mut nb_domain_name = AVPair::default();
+    let mut nb_domain_name = AvPair::default();
     nb_domain_name.av_id = Some(AvId::MsvAvNbDomainName);
     nb_domain_name.av_len = b"\x16\x00".to_vec();
     nb_domain_name.value =
         b"\x52\x00\x41\x00\x53\x00\x50\x00\x42\x00\x45\x00\x52\x00\x52\x00\x59\x00\x50\x00\x49\x00"
             .to_vec();
 
-    let mut nb_computer_name = AVPair::default();
+    let mut nb_computer_name = AvPair::default();
     nb_computer_name.av_id = Some(AvId::MsvAvNbComputerName);
     nb_computer_name.av_len = b"\x16\x00".to_vec();
     nb_computer_name.value =
         b"\x52\x00\x41\x00\x53\x00\x50\x00\x42\x00\x45\x00\x52\x00\x52\x00\x59\x00\x50\x00\x49\x00"
             .to_vec();
 
-    let mut dns_domain_name = AVPair::default();
+    let mut dns_domain_name = AvPair::default();
     dns_domain_name.av_id = Some(AvId::MsvAvDnsDomainName);
     dns_domain_name.av_len = b"\x02\x00".to_vec();
     dns_domain_name.value = vec![0; 2];
 
-    let mut dns_computer_name = AVPair::default();
+    let mut dns_computer_name = AvPair::default();
     dns_computer_name.av_id = Some(AvId::MsvAvDnsComputerName);
     dns_computer_name.av_len = b"\x16\x00".to_vec();
     dns_computer_name.value =
         b"\x72\x00\x61\x00\x73\x00\x70\x00\x62\x00\x65\x00\x72\x00\x72\x00\x79\x00\x70\x00\x69\x00"
             .to_vec();
 
-    let mut time_stamp = AVPair::default();
+    let mut time_stamp = AvPair::default();
     time_stamp.av_id = Some(AvId::MsvAvTimeStamp);
     time_stamp.av_len = b"\x08\x00".to_vec();
     time_stamp.value = server_time_stamp;
 
-    let mut target = AVPair::default();
+    let mut target = AvPair::default();
     target.av_id = Some(AvId::MsvAvTargetName);
     target.av_len = b"\x24\x00".to_vec();
     target.value = b"\x63\x00\x69\x00\x66\x00\x73\x00\x2f\x00\x31\x00\x39\x00\x32\x00\x2e\x00\
                      \x31\x00\x36\x00\x38\x00\x2e\x00\x30\x00\x2e\x00\x31\x00\x37\x00\x31\x00"
         .to_vec();
 
-    let mut eol = AVPair::default();
+    let mut eol = AvPair::default();
     eol.av_id = Some(AvId::MsvAvEOL);
     eol.av_len = vec![0; 2];
 
