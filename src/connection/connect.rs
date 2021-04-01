@@ -1,49 +1,84 @@
 //! This module establishes a direct TCP connection between client and host over port 445.
 //! It also performs the SMB handshake.
 
-use std::io::{Read, Write};
 use std::net::TcpStream;
+use std::{
+    io::{Read, Write},
+    time::Duration,
+};
 
-use handshake_helper::negotiate_context::Ciphers;
-use handshake_helper::negotiate_context::CompressionAlgorithms;
-use handshake_helper::negotiate_context::CompressionCapabilities;
-use handshake_helper::negotiate_context::EncryptionCapabilities;
-use handshake_helper::negotiate_context::NetnameNegotiateContextId;
-use handshake_helper::negotiate_context::PreauthIntegrityCapabilities;
-use requests::negotiate::Dialects;
+use builder::{
+    build_close_request, build_default_echo_request, create_request::build_default_create_request,
+    query_info_request::build_default_query_info_request,
+    session_setup_1_request::build_default_session_setup_1_request,
+    session_setup_2_request::build_default_session_setup_2_request,
+    tree_connect_request::build_default_tree_connect_request,
+};
+use format::{
+    decoder::{
+        create_decoder::decode_create_response_body, decode_response_header,
+        security_blob_decoder::decode_security_response,
+    },
+    encoder::serialize_request,
+};
 
-use super::super::smb2::handshake_helper;
-use super::super::smb2::header;
-use super::super::smb2::requests;
-
-use crate::format;
+use crate::builder;
+use crate::ntlmssp::MessageType;
+use crate::smb2::requests::RequestType;
+use crate::{format, smb2::responses};
 
 pub fn connect_to_port_445_via_tcp() {
-    let (header, neg_request) = build_negotiate_request();
-    let request = format::encoder::serialize_negotiate_request(&header, &neg_request);
-    let mut buffer = [0 as u8; 300];
     match TcpStream::connect("192.168.0.171:445") {
         Ok(mut stream) => {
+            stream
+                .set_read_timeout(Some(Duration::from_secs(5)))
+                .expect("Failed to set read time out.");
             println!("Successfully connected to server in port 445.");
-            stream.write(&request[..]).unwrap();
-            println!("Sent Negotiate Request, awaiting reply...");
-            match stream.read(&mut buffer) {
-                Ok(_) => {
-                    for (index, hex_value) in buffer.iter().enumerate() {
-                        print!("{:#04x} ", hex_value);
-                        if (index + 1) % 16 == 0 {
-                            println!();
-                        } else if (index + 1) % 8 == 0 {
-                            print!("\t");
-                        }
-                    }
-                    println!();
-                    println!("Packet Size: {}", buffer.len());
-                }
-                Err(e) => {
-                    println!("Failed to receive data: {}", e);
-                }
-            }
+
+            send_negotiate(&mut stream);
+            let mut buffer = send_session_setup_1_request_and_get_response(&mut stream);
+
+            let (response_header, session_setup_response_body) =
+                format::decoder::decode_session_setup_response(buffer.to_vec());
+
+            let chosen_session_id = response_header.session_id;
+
+            send_session_setup_2_request(
+                &mut stream,
+                session_setup_response_body,
+                chosen_session_id.clone(),
+            );
+
+            buffer =
+                send_tree_connect_request_and_get_response(&mut stream, chosen_session_id.clone());
+
+            let tree_connect_response_header = decode_response_header(buffer[4..68].to_vec());
+            let chosen_tree_id = tree_connect_response_header.tree_id;
+
+            buffer = send_create_request_and_get_response(
+                &mut stream,
+                chosen_session_id.clone(),
+                chosen_tree_id.clone(),
+            );
+
+            let create_response_body = decode_create_response_body(buffer[68..].to_vec());
+            let chosen_file_id = create_response_body.file_id;
+
+            send_query_info_request(
+                &mut stream,
+                chosen_session_id.clone(),
+                chosen_tree_id.clone(),
+                chosen_file_id.clone(),
+            );
+
+            send_echo_request(&mut stream);
+
+            send_close_request(
+                &mut stream,
+                chosen_session_id,
+                chosen_tree_id,
+                chosen_file_id,
+            );
         }
         Err(e) => {
             println!("Failed to connect: {}", e);
@@ -52,105 +87,196 @@ pub fn connect_to_port_445_via_tcp() {
     println!("Terminated.");
 }
 
-pub fn build_negotiate_request() -> (header::SyncHeader, requests::negotiate::Negotiate) {
-    let mut sync_neg_header = header::SyncHeader::default();
+/// Sends a negotiate request to the server.
+pub fn send_negotiate(stream: &mut TcpStream) {
+    let mut buffer: [u8; 300] = [0; 300];
+    let (negotiate_header, neg_request) =
+        builder::negotiate_request::build_default_negotiate_request();
+    let negotiate_request =
+        format::encoder::serialize_request(&negotiate_header, &RequestType::Negotiate(neg_request));
 
-    sync_neg_header.generic.credit_charge = vec![0; 2];
-    sync_neg_header.generic.channel_sequence = vec![0; 2];
-    sync_neg_header.generic.reserved = vec![0; 2];
-    sync_neg_header.generic.command = header::Commands::Negotiate.unpack_byte_code();
-    sync_neg_header.generic.credit = vec![0; 2];
-    sync_neg_header.generic.flags = header::Flags::NoFlags.unpack_byte_code();
-    sync_neg_header.generic.next_command = vec![0; 4];
-    sync_neg_header.generic.message_id = vec![0; 8];
-    sync_neg_header.tree_id = vec![0; 4];
-    sync_neg_header.session_id = vec![0; 8];
-    sync_neg_header.signature = vec![0; 16];
+    stream.write_all(&negotiate_request[..]).unwrap();
+    println!("Sent Negotiate Request, awaiting reply...");
+    match stream.read(&mut buffer) {
+        Ok(_) => println!("Successfully received negotiate response from server."),
+        Err(e) => {
+            println!("Failed to receive negotiate response: {}", e);
+        }
+    }
+}
 
-    let mut neg_req = requests::negotiate::Negotiate::default();
+/// Sends a session setup 1 request and returns the server response.
+pub fn send_session_setup_1_request_and_get_response(stream: &mut TcpStream) -> [u8; 300] {
+    let mut buffer: [u8; 300] = [0; 300];
+    let (session_setup_header_1, sesh_request_1) = build_default_session_setup_1_request();
+    let session_setup_request_1 = format::encoder::serialize_request(
+        &session_setup_header_1,
+        &RequestType::SessionSetup(sesh_request_1),
+    );
 
-    neg_req.dialect_count = b"\x05\x00".to_vec();
-    neg_req.security_mode =
-        handshake_helper::fields::SecurityMode::NegotiateSigningEnabled.unpack_byte_code(2);
-    neg_req.capabilities = handshake_helper::fields::Capabilities::return_all_capabilities();
-    neg_req.client_guid = vec![0; 16];
-    neg_req.negotiate_context_offset = b"\x70\x00\x00\x00".to_vec();
-    neg_req.negotiate_context_count = b"\x04\x00".to_vec();
-    neg_req.dialects = vec![
-        Dialects::SMB202.unpack_byte_code(),
-        Dialects::SMB21.unpack_byte_code(),
-        Dialects::SMB30.unpack_byte_code(),
-        Dialects::SMB302.unpack_byte_code(),
-        Dialects::SMB311.unpack_byte_code(),
-    ];
-    neg_req.padding = vec![0; 2];
+    stream.write_all(&session_setup_request_1[..]).unwrap();
+    println!("Sent Session Setup Request 1, awaiting reply...");
+    match stream.read(&mut buffer) {
+        Ok(_) => println!("Successfully received session setup response 1 from server."),
+        Err(e) => {
+            println!("Failed to receive session setup response: {}", e);
+        }
+    }
 
-    let context = handshake_helper::negotiate_context::NegotiateContext::default();
+    buffer
+}
 
-    // Pre authentication setup
-    let mut preauth = context.clone();
-    let mut preauth_caps = PreauthIntegrityCapabilities::default();
-    preauth_caps.hash_algorithm_count = b"\x01\x00".to_vec();
-    preauth_caps.salt_length = b"\x20\x00".to_vec();
-    preauth_caps.hash_algorithms = vec![b"\x01\x00".to_vec()];
-    preauth_caps.salt = b"\x79\x13\x02\xd4\xd7\x0c\x2a\x12\x50\x84\xba\xa6\x03\xae\xda\xe4\x12\xe8\x0b\x6e\x96\xf7\xdb\xa9\x46\xdf\x3e\xdc\x16\xe8\x4a\x5a".to_vec();
+/// Sends a session setup 2 request.
+pub fn send_session_setup_2_request(
+    stream: &mut TcpStream,
+    session_setup_response_body: responses::session_setup::SessionSetup,
+    chosen_session_id: Vec<u8>,
+) {
+    let mut buffer: [u8; 300] = [0; 300];
+    let challenge_struct = match decode_security_response(session_setup_response_body.buffer)
+        .message
+        .unwrap()
+    {
+        MessageType::Challenge(challenge) => challenge,
+        _ => panic!("Invalid message type in server response."),
+    };
 
-    let preauth_context =
-        handshake_helper::negotiate_context::ContextType::PreauthIntegrityCapabilities(
-            preauth_caps,
-        );
-    preauth.context_type = preauth_context.unpack_byte_code();
-    preauth.data_length = b"\x26\x00".to_vec();
-    preauth.data = Some(preauth_context);
+    let (session_setup_2_request_header, session_setup_2_request_body) =
+        build_default_session_setup_2_request(chosen_session_id, challenge_struct);
 
-    // Encryption setup
-    let mut encrypt = context.clone();
-    let mut encrypt_caps = EncryptionCapabilities::default();
-    encrypt_caps.cipher_count = b"\x02\x00".to_vec();
-    encrypt_caps.ciphers = vec![
-        Ciphers::AES128GCM.unpack_byte_code(),
-        Ciphers::AES128CCM.unpack_byte_code(),
-    ];
+    let session_setup_request_2 = serialize_request(
+        &session_setup_2_request_header,
+        &RequestType::SessionSetup(session_setup_2_request_body),
+    );
 
-    let encrypt_context =
-        handshake_helper::negotiate_context::ContextType::EncryptionCapabilities(encrypt_caps);
+    stream.write_all(&session_setup_request_2[..]).unwrap();
+    println!("Sent Session Setup Request 2, awaiting reply...");
+    match stream.read(&mut buffer) {
+        Ok(_) => println!("Successfully received session setup response 2 from server."),
+        Err(e) => {
+            println!("Failed to receive session setup 2 response: {}", e);
+        }
+    }
+}
 
-    encrypt.context_type = encrypt_context.unpack_byte_code();
-    encrypt.data_length = b"\x06\x00".to_vec();
-    encrypt.data = Some(encrypt_context);
+/// Sends a tree connect request and returns the server response.
+pub fn send_tree_connect_request_and_get_response(
+    stream: &mut TcpStream,
+    chosen_session_id: Vec<u8>,
+) -> [u8; 300] {
+    let mut buffer: [u8; 300] = [0; 300];
+    let (tree_connect_header, tree_connect_request_body) =
+        build_default_tree_connect_request(chosen_session_id);
 
-    let mut compress = context.clone();
-    let mut compress_caps = CompressionCapabilities::default();
-    compress_caps.compression_algorithm_count = b"\x03\x00".to_vec();
-    compress_caps.flags = vec![0; 4];
-    compress_caps.compression_algorithms = vec![
-        CompressionAlgorithms::LZ77.unpack_byte_code(),
-        CompressionAlgorithms::LZ77Huffman.unpack_byte_code(),
-        CompressionAlgorithms::LZNT1.unpack_byte_code(),
-    ];
+    let tree_connect_request = serialize_request(
+        &tree_connect_header,
+        &RequestType::TreeConnect(tree_connect_request_body),
+    );
 
-    let compress_context =
-        handshake_helper::negotiate_context::ContextType::CompressionCapabilities(compress_caps);
+    stream.write_all(&tree_connect_request[..]).unwrap();
+    println!("Sent Tree Connect request, awaiting reply...");
+    match stream.read(&mut buffer) {
+        Ok(_) => println!("Successfully received Tree Connect response from server."),
+        Err(e) => {
+            println!("Failed to receive Tree Connect response: {}", e);
+        }
+    }
 
-    compress.context_type = compress_context.unpack_byte_code();
-    compress.data_length = b"\x0e\x00".to_vec();
-    compress.data = Some(compress_context);
+    buffer
+}
 
-    let mut netname = context.clone();
-    let mut netname_id = NetnameNegotiateContextId::default();
+/// Sends a create request and returns the server response.
+pub fn send_create_request_and_get_response(
+    stream: &mut TcpStream,
+    chosen_session_id: Vec<u8>,
+    chosen_tree_id: Vec<u8>,
+) -> [u8; 300] {
+    let mut buffer: [u8; 300] = [0; 300];
+    let (create_request_header, create_request_body) =
+        build_default_create_request(chosen_tree_id, chosen_session_id);
+    let create_request = serialize_request(
+        &create_request_header,
+        &RequestType::Create(create_request_body),
+    );
 
-    netname_id.net_name = b"\x31\x00\x39\x00\x32\x00\x2e\x00\x31\x00\x36\x00\x38\x00\x2e\x00\x30\x00\x2e\x00\x31\x00\x37\x00\x31\x00".to_vec();
+    stream.write_all(&create_request[..]).unwrap();
+    println!("Sent Create request, awaiting reply...");
+    match stream.read(&mut buffer) {
+        Ok(_) => println!("Successfully received Create response from server."),
+        Err(e) => {
+            println!("Failed to receive Create response: {}", e);
+        }
+    }
 
-    let netname_context =
-        handshake_helper::negotiate_context::ContextType::NetnameNegotiateContextId(netname_id);
+    buffer
+}
 
-    netname.context_type = netname_context.unpack_byte_code();
-    netname.data_length = b"\x1a\x00".to_vec();
-    netname.data = Some(netname_context);
+/// Sends a query info request.
+pub fn send_query_info_request(
+    stream: &mut TcpStream,
+    chosen_session_id: Vec<u8>,
+    chosen_tree_id: Vec<u8>,
+    chosen_file_id: Vec<u8>,
+) {
+    let mut buffer: [u8; 300] = [0; 300];
+    let (query_info_request_header, query_info_request_body) =
+        build_default_query_info_request(chosen_tree_id, chosen_session_id, chosen_file_id);
+    let query_info_request = serialize_request(
+        &query_info_request_header,
+        &RequestType::QueryInfo(query_info_request_body),
+    );
 
-    neg_req.negotiate_context_list = vec![preauth, encrypt, compress, netname];
+    stream.write_all(&query_info_request[..]).unwrap();
+    println!("Sent Query Info request, awaiting reply...");
+    match stream.read(&mut buffer) {
+        Ok(_) => println!("Successfully received Query Info response from server."),
+        Err(e) => {
+            println!("Failed to receive Query Info response: {}", e);
+        }
+    }
+}
 
-    (sync_neg_header, neg_req)
+/// Sends an echo request.
+pub fn send_echo_request(stream: &mut TcpStream) {
+    let mut buffer: [u8; 300] = [0; 300];
+    let (echo_request_header, echo_request_body) = build_default_echo_request();
+    let echo_request =
+        serialize_request(&echo_request_header, &RequestType::Echo(echo_request_body));
+
+    stream.write_all(&echo_request[..]).unwrap();
+    println!("Sent Echo request, awaiting reply...");
+    match stream.read(&mut buffer) {
+        Ok(_) => println!("Successfully received Echo response from server."),
+        Err(e) => {
+            println!("Failed to receive Echo response: {}", e);
+        }
+    }
+}
+
+/// Sends a close request.
+pub fn send_close_request(
+    stream: &mut TcpStream,
+    chosen_session_id: Vec<u8>,
+    chosen_tree_id: Vec<u8>,
+    chosen_file_id: Vec<u8>,
+) {
+    let mut buffer: [u8; 300] = [0; 300];
+    let (close_request_header, close_request_body) =
+        build_close_request(chosen_tree_id, chosen_session_id, chosen_file_id);
+
+    let close_request = serialize_request(
+        &close_request_header,
+        &RequestType::Close(close_request_body),
+    );
+
+    stream.write_all(&close_request[..]).unwrap();
+    println!("Sent Close request, awaiting reply...");
+    match stream.read(&mut buffer) {
+        Ok(_) => println!("Successfully received Close response from server."),
+        Err(e) => {
+            println!("Failed to receive Close response: {}", e);
+        }
+    }
 }
 
 #[cfg(test)]

@@ -33,11 +33,11 @@ impl SecurityMode {
     /// Maps the byte code of an incoming response to the corresponding security mode.
     pub fn map_byte_code_to_mode(byte_code: Vec<u8>) -> SecurityMode {
         if let Some(code) = byte_code.get(0) {
-            return match code {
+            match code {
                 1 => SecurityMode::NegotiateSigningEnabled,
                 2 => SecurityMode::NegotiateSigningRequired,
                 _ => panic!("Invalid security mode."),
-            };
+            }
         } else {
             panic!("Empty byte code for security mode.");
         }
@@ -111,6 +111,32 @@ impl Capabilities {
             Capabilities::GlobalCapDirectoryLeasing,
             Capabilities::GlobalCapEncryption,
         ])
+    }
+}
+
+/// OplockLevel (1 byte): The oplock level.
+/// This field MUST contain one of the following values.
+/// For named pipes, the server MUST always revert to SMB2_OPLOCK_LEVEL_NONE
+/// irrespective of the value of this field.
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum OplockLevel {
+    None,
+    II,
+    Exclusive,
+    Batch,
+    Lease,
+}
+
+impl OplockLevel {
+    /// Unpacks the byte code of the corresponding requested oplock level.
+    pub fn unpack_byte_code(&self) -> Vec<u8> {
+        match self {
+            OplockLevel::None => b"\x00".to_vec(),
+            OplockLevel::II => b"\x01".to_vec(),
+            OplockLevel::Exclusive => b"\x08".to_vec(),
+            OplockLevel::Batch => b"\x09".to_vec(),
+            OplockLevel::Lease => b"\xff".to_vec(),
+        }
     }
 }
 

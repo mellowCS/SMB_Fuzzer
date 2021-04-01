@@ -104,8 +104,8 @@ impl Flags {
             Flags::RelatedOperations => b"\x04\x00\x00\x00".to_vec(),
             Flags::Signed => b"\x08\x00\x00\x00".to_vec(),
             Flags::PriorityMask => b"\x70\x00\x00\x00".to_vec(),
-            Flags::DFSOperations => b"\x00\x00\x00\x10".to_vec(),
-            Flags::ReplayOperation => b"\x00\x00\x00\x20".to_vec(),
+            Flags::DFSOperations => b"\x10\x00\x00\x00".to_vec(),
+            Flags::ReplayOperation => b"\x20\x00\x00\x00".to_vec(),
             Flags::NoFlags => b"\x00\x00\x00\x00".to_vec(),
         }
     }

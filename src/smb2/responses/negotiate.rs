@@ -2,7 +2,7 @@
 //! The SMB2 NEGOTIATE Response packet is sent by the server to notify the client of the preferred common dialect.
 //! This response is composed of an SMB2 header, followed by this response structure.
 
-use crate::smb2::handshake_helper::{fields::SecurityMode, negotiate_context::NegotiateContext};
+use crate::smb2::helper_functions::{fields::SecurityMode, negotiate_context::NegotiateContext};
 
 /// negotiate response size of 65 bytes
 const STRUCTURE_SIZE: &[u8; 2] = b"\x41\x00";

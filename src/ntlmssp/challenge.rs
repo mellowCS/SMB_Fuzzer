@@ -18,18 +18,18 @@ pub struct Challenge {
     /// - *TargetNameLen* and *TargetNameMaxLen* **SHOULD** be set to zero on transmission.
     /// - *TargetNameBufferOffset* field **SHOULD** be set to the offset from the beginning
     ///   of the *CHALLENGE_MESSAGE* to where the *TargetName* would be in Payload if it were present.
-    target_name_fields: TargetNameFields,
+    pub target_name_fields: TargetNameFields,
     /// NegotiateFlags (4 bytes): A NEGOTIATE structure that contains a set of flags.
     /// The server sets flags to indicate options it supports or, if there has been a NEGOTIATE_MESSAGE,
     /// the choices it has made from the options offered by the client.
     /// The values for the negotiate flags should be taken from the Corresponding bitflag struct.
-    negotiate_flags: Vec<u8>,
+    pub negotiate_flags: Vec<u8>,
     /// ServerChallenge (8 bytes): A 64-bit value that contains the NTLM challenge.
     /// The challenge is a 64-bit nonce.
-    server_challenge: Vec<u8>,
+    pub server_challenge: Vec<u8>,
     /// Reserved (8 bytes): An 8-byte array whose elements MUST be zero when sent
     /// and MUST be ignored on receipt.
-    reserved: Vec<u8>,
+    pub reserved: Vec<u8>,
     /// TargetInfoFields (8 bytes): A field containing TargetInfo information.
     ///
     /// If the NTLMSSP_NEGOTIATE_TARGET_INFO flag is not clear in NegotiateFlags,
@@ -41,29 +41,29 @@ pub struct Challenge {
     /// - TargetInfoLen and TargetInfoMaxLen SHOULD be set to zero on transmission.
     /// - TargetInfoBufferOffset field SHOULD be set to the offset from the beginning
     ///   of the CHALLENGE_MESSAGE to where the TargetInfo would be in Payload if it were present.
-    target_info_fields: TargetInfoFields,
+    pub target_info_fields: TargetInfoFields,
     /// Version (8 bytes): A VERSION structure that SHOULD be populated only when the NTLMSSP_NEGOTIATE_VERSION
     /// flag is set in the NegotiateFlags field. This structure is used for debugging purposes only.
     /// In normal (non-debugging) protocol messages, it is ignored and does not affect the NTLM message processing.
-    version: Version,
+    pub version: Version,
     /// Payload (variable): A byte array that contains the data referred to by the TargetNameBufferOffset
     /// and TargetInfoBufferOffset fields. Payload data can be present in any order within the Payload field,
     /// with variable-length padding before or after the data. The data that can be present in the Payload
     /// field of this message, in no particular order.
-    payload: Payload,
+    pub payload: Payload,
 }
 
 impl Challenge {
     /// Creates a new instance of a NTLM Challenge.
-    pub fn _default() -> Self {
+    pub fn default() -> Self {
         Challenge {
-            target_name_fields: TargetNameFields::_default(),
+            target_name_fields: TargetNameFields::default(),
             negotiate_flags: Vec::new(),
             server_challenge: Vec::new(),
             reserved: b"\x00\x00\x00\x00\x00\x00\x00\x00".to_vec(),
-            target_info_fields: TargetInfoFields::_default(),
+            target_info_fields: TargetInfoFields::default(),
             version: Version::default(),
-            payload: Payload::_default(),
+            payload: Payload::default(),
         }
     }
 }
@@ -73,22 +73,22 @@ impl Challenge {
 pub struct TargetNameFields {
     ///  TargetNameLen (2 bytes): A 16-bit unsigned integer that
     /// defines the size, in bytes, of TargetName in Payload.
-    target_name_len: Vec<u8>,
+    pub target_name_len: Vec<u8>,
     ///  TargetNameMaxLen (2 bytes): A 16-bit unsigned integer
     /// that SHOULD be set to the value of TargetNameLen and MUST
     /// be ignored on receipt.
-    target_name_max_len: Vec<u8>,
+    pub target_name_max_len: Vec<u8>,
     /// TargetNameBufferOffset (4 bytes): A 32-bit unsigned integer
     /// that defines the offset, in bytes, from the beginning of the
     /// CHALLENGE_MESSAGE to TargetName in Payload. If TargetName is a
     /// Unicode string, the values of TargetNameBufferOffset and
     /// TargetNameLen MUST be multiples of 2.
-    target_name_buffer_offset: Vec<u8>,
+    pub target_name_buffer_offset: Vec<u8>,
 }
 
 impl TargetNameFields {
     /// Creates a new instance of Target Name Fields.
-    pub fn _default() -> Self {
+    pub fn default() -> Self {
         TargetNameFields {
             target_name_len: Vec::new(),
             target_name_max_len: Vec::new(),
@@ -102,18 +102,18 @@ impl TargetNameFields {
 pub struct TargetInfoFields {
     /// TargetInfoLen (2 bytes): A 16-bit unsigned integer that defines
     /// the size, in bytes, of TargetInfo in Payload.
-    target_info_len: Vec<u8>,
+    pub target_info_len: Vec<u8>,
     /// TargetInfoMaxLen (2 bytes): A 16-bit unsigned integer that
     /// SHOULD be set to the value of TargetInfoLen and MUST be ignored on receipt.
-    target_info_max_len: Vec<u8>,
+    pub target_info_max_len: Vec<u8>,
     /// TargetInfoBufferOffset (4 bytes): A 32-bit unsigned integer that defines
     /// the offset, in bytes, from the beginning of the CHALLENGE_MESSAGE to TargetInfo in Payload.
-    target_info_buffer_offset: Vec<u8>,
+    pub target_info_buffer_offset: Vec<u8>,
 }
 
 impl TargetInfoFields {
     /// Creates a new instance of Target Info Fields.
-    pub fn _default() -> Self {
+    pub fn default() -> Self {
         TargetInfoFields {
             target_info_len: Vec::new(),
             target_info_max_len: Vec::new(),
@@ -132,15 +132,15 @@ pub struct Payload {
     /// contains the name of the server authentication realm, and MUST be expressed in the negotiated character set.
     /// A server that is a member of a domain returns the domain of which it is a member, and a server that is
     /// not a member of a domain returns the server name.
-    target_name: Vec<u8>,
+    pub target_name: Vec<u8>,
     /// TargetInfo (variable): If TargetInfoLen does not equal 0x0000, TargetInfo MUST be a byte array that
     /// contains a sequence of AV_PAIR structures. The length of each AV_PAIR is determined by its AvLen field (plus 4 bytes).
-    target_info: Vec<AVPair>,
+    pub target_info: Vec<AVPair>,
 }
 
 impl Payload {
     /// Creates a new instance of the NTLM Challenge Payload.
-    pub fn _default() -> Self {
+    pub fn default() -> Self {
         Payload {
             target_name: Vec::new(),
             target_info: Vec::new(),

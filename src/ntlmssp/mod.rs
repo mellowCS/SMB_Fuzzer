@@ -1,22 +1,25 @@
 //! Provides fields for NTLMSSP
 
-mod authenticate;
-mod challenge;
-mod negotiate;
+pub mod authenticate;
+pub mod challenge;
 pub mod negotiate_flags;
+
+use authenticate::Authenticate;
+use challenge::Challenge;
 
 /// Signature 'N', 'T', 'L', 'M', 'S', 'S', 'P', '\0'
 const SIGNATURE: &[u8; 8] = b"\x4e\x54\x4c\x4d\x53\x53\x50\x00";
 
+/// NTLMSSP header that contains information about the message type and the message itself.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Header {
     /// Signature (8 bytes): An 8-byte character array that MUST contain
     /// the ASCII string ('N', 'T', 'L', 'M', 'S', 'S', 'P', '\0').
-    signature: Vec<u8>,
+    pub signature: Vec<u8>,
     /// MessageType (4 bytes): The MessageType field.
-    message_type: Vec<u8>,
+    pub message_type: Vec<u8>,
     /// Furthe fields of the NTLM message, which depend on the message type.
-    message: Option<MessageType>,
+    pub message: Option<MessageType>,
 }
 
 impl Header {
@@ -32,18 +35,29 @@ impl Header {
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum MessageType {
-    Negotiate,
-    Challenge,
-    Authenticate,
+    Challenge(Challenge),
+    Authenticate(Box<Authenticate>),
 }
 
 impl MessageType {
     /// Unpacks the byte code of NTLM message types.
     pub fn unpack_byte_code(&self) -> Vec<u8> {
         match self {
-            MessageType::Negotiate => b"\x00\x00\x00\x01".to_vec(),
-            MessageType::Challenge => b"\x00\x00\x00\x02".to_vec(),
-            MessageType::Authenticate => b"\x00\x00\x00\x03".to_vec(),
+            MessageType::Challenge(_) => b"\x02\x00\x00\x00".to_vec(),
+            MessageType::Authenticate(_) => b"\x03\x00\x00\x00".to_vec(),
+        }
+    }
+
+    /// Maps the byte code of an incoming response to the corresponding message type.
+    pub fn map_byte_code_to_message_type(byte_code: Vec<u8>) -> MessageType {
+        if let Some(code) = byte_code.get(0) {
+            match code {
+                2 => MessageType::Challenge(Challenge::default()),
+                3 => MessageType::Authenticate(Box::new(Authenticate::default())),
+                _ => panic!("Invalid message type for NTLMSSP."),
+            }
+        } else {
+            panic!("Empty message type for NTLMSSP.")
         }
     }
 }
@@ -56,22 +70,22 @@ impl MessageType {
 pub struct Version {
     /// ProductMajorVersion (1 byte): An 8-bit unsigned integer that SHOULD
     /// contain the major version number of the operating system in use.
-    product_major_version: Vec<u8>,
+    pub product_major_version: Vec<u8>,
     /// ProductMinorVersion (1 byte): An 8-bit unsigned integer that SHOULD
     /// contain the minor version number of the operating system in use.
-    product_minor_version: Vec<u8>,
+    pub product_minor_version: Vec<u8>,
     /// ProductBuild (2 bytes): A 16-bit unsigned integer that contains
     /// the build number of the operating system in use.
     /// This field SHOULD be set to a 16-bit quantity that identifies
     /// the operating system build number.
-    product_build: Vec<u8>,
+    pub product_build: Vec<u8>,
     /// Reserved (3 bytes): A 24-bit data area that SHOULD be
     /// set to zero and MUST be ignored by the recipient.
-    reserved: Vec<u8>,
+    pub reserved: Vec<u8>,
     /// NTLMRevisionCurrent (1 byte): An 8-bit unsigned integer that
     /// contains a value indicating the current revision of the NTLMSSP in use.
     /// This field SHOULD contain the value 0x0F: Version 15 of the NTLMSSP is in use.
-    ntlm_revision_current: Vec<u8>,
+    pub ntlm_revision_current: Vec<u8>,
 }
 
 impl Version {
@@ -91,13 +105,13 @@ impl Version {
 pub struct DomainNameFields {
     /// DomainNameLen (2 bytes): A 16-bit unsigned integer that
     /// defines the size, in bytes, of DomainName in the Payload.
-    domain_name_len: Vec<u8>,
+    pub domain_name_len: Vec<u8>,
     /// DomainNameMaxLen (2 bytes): A 16-bit unsigned integer that
     /// SHOULD be set to the value of DomainNameLen, and MUST be ignored on receipt.
-    domain_name_max_len: Vec<u8>,
+    pub domain_name_max_len: Vec<u8>,
     /// DomainNameBufferOffset (4 bytes): A 32-bit unsigned integer that defines
     /// the offset, in bytes, from the beginning of the NEGOTIATE_MESSAGE to DomainName in Payload.
-    domain_name_buffer_offset: Vec<u8>,
+    pub domain_name_buffer_offset: Vec<u8>,
 }
 
 impl DomainNameFields {
@@ -115,13 +129,13 @@ impl DomainNameFields {
 pub struct WorkstationFields {
     /// WorkstationLen (2 bytes): A 16-bit unsigned integer that defines the size,
     /// in bytes, of WorkStationName in the Payload.
-    workstation_len: Vec<u8>,
+    pub workstation_len: Vec<u8>,
     /// WorkstationMaxLen (2 bytes): A 16-bit unsigned integer that
     /// SHOULD be set to the value of WorkstationLen and MUST be ignored on receipt.
-    workstation_max_len: Vec<u8>,
+    pub workstation_max_len: Vec<u8>,
     /// WorkstationBufferOffset (4 bytes): A 32-bit unsigned integer that defines the offset,
     /// in bytes, from the beginning of the NEGOTIATE_MESSAGE to WorkstationName in the Payload.
-    workstation_buffer_offset: Vec<u8>,
+    pub workstation_buffer_offset: Vec<u8>,
 }
 
 impl WorkstationFields {
@@ -146,16 +160,27 @@ pub struct AVPair {
     /// type in the Value field. The contents of this field MUST be a value from
     /// the following table. The corresponding Value field in this AV_PAIR MUST
     /// contain the information specified in the description of that AvId.
-    av_id: Vec<u8>,
+    pub av_id: Option<AvId>,
     /// AvLen (2 bytes): A 16-bit unsigned integer that defines the length,
     /// in bytes, of the Value field.
-    av_len: Vec<u8>,
+    pub av_len: Vec<u8>,
     /// Value (variable): A variable-length byte-array that contains the value
     /// defined for this AV pair entry. The contents of this field depend on the
     /// type expressed in the AvId field. The available types and resulting format
     /// and contents of this field are specified in the table within the AvId field
     /// description in this topic.
-    value: Vec<u8>,
+    pub value: Vec<u8>,
+}
+
+impl AVPair {
+    /// Creates a new AV pair instance.
+    pub fn default() -> Self {
+        AVPair {
+            av_id: None,
+            av_len: Vec::new(),
+            value: Vec::new(),
+        }
+    }
 }
 
 /// *MsvAvEOL*:
@@ -221,16 +246,38 @@ impl AvId {
     pub fn unpack_byte_code(&self) -> Vec<u8> {
         match self {
             AvId::MsvAvEOL => b"\x00\x00".to_vec(),
-            AvId::MsvAvNbComputerName => b"\x00\x01".to_vec(),
-            AvId::MsvAvNbDomainName => b"\x00\x02".to_vec(),
-            AvId::MsvAvDnsComputerName => b"\x00\x03".to_vec(),
-            AvId::MsvAvDnsDomainName => b"\x00\x04".to_vec(),
-            AvId::MsvAvDnsTreeName => b"\x00\x05".to_vec(),
-            AvId::MsvAvFlags => b"\x00\x06".to_vec(),
-            AvId::MsvAvTimeStamp => b"\x00\x07".to_vec(),
-            AvId::MsvAvSingleHost => b"\x00\x08".to_vec(),
-            AvId::MsvAvTargetName => b"\x00\x09".to_vec(),
-            AvId::MsvAvChannelBindings => b"\x00\x0a".to_vec(),
+            AvId::MsvAvNbComputerName => b"\x01\x00".to_vec(),
+            AvId::MsvAvNbDomainName => b"\x02\x00".to_vec(),
+            AvId::MsvAvDnsComputerName => b"\x03\x00".to_vec(),
+            AvId::MsvAvDnsDomainName => b"\x04\x00".to_vec(),
+            AvId::MsvAvDnsTreeName => b"\x05\x00".to_vec(),
+            AvId::MsvAvFlags => b"\x06\x00".to_vec(),
+            AvId::MsvAvTimeStamp => b"\x07\x00".to_vec(),
+            AvId::MsvAvSingleHost => b"\x08\x00".to_vec(),
+            AvId::MsvAvTargetName => b"\x09\x00".to_vec(),
+            AvId::MsvAvChannelBindings => b"\x0a\x00".to_vec(),
+        }
+    }
+
+    /// Maps the byte code of an incoming response to the corresponding AV ID.
+    pub fn map_byte_code_to_av_id(byte_code: Vec<u8>) -> AvId {
+        if let Some(code) = byte_code.get(0) {
+            match code {
+                0 => AvId::MsvAvEOL,
+                1 => AvId::MsvAvNbComputerName,
+                2 => AvId::MsvAvNbDomainName,
+                3 => AvId::MsvAvDnsComputerName,
+                4 => AvId::MsvAvDnsDomainName,
+                5 => AvId::MsvAvDnsTreeName,
+                6 => AvId::MsvAvFlags,
+                7 => AvId::MsvAvTimeStamp,
+                8 => AvId::MsvAvSingleHost,
+                9 => AvId::MsvAvTargetName,
+                10 => AvId::MsvAvChannelBindings,
+                _ => panic!("Invalid AV ID."),
+            }
+        } else {
+            panic!("Empty AV ID field.");
         }
     }
 }

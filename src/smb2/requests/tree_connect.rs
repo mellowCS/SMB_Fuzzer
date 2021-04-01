@@ -2,7 +2,7 @@
 //! The SMB2 TREE_CONNECT Request packet is sent by a client to request access to a particular share on the server.
 //! This request is composed of an SMB2 Packet Header that is followed by this request structure.
 
-use crate::smb2::handshake_helper::tree_connect_context::TreeConnectContext;
+use crate::smb2::helper_functions::tree_connect_context::TreeConnectContext;
 
 /// tree connect request size of 9 bytes
 const STRUCTURE_SIZE: &[u8; 2] = b"\x09\x00";
@@ -14,25 +14,25 @@ pub struct TreeConnect {
     /// indicating the size of the request structure, not including the header.
     /// The client MUST set it to this value regardless of how long Buffer[]
     /// actually is in the request being sent.
-    structure_size: Vec<u8>,
+    pub structure_size: Vec<u8>,
     /// Flags/Reserved (2 bytes): This field is interpreted in different ways
     /// depending on the SMB2 dialect. In the SMB 3.1.1 dialect,
     /// this field is interpreted as the Flags field, which indicates how to process the operation.
-    flags: Vec<u8>,
+    pub flags: Vec<u8>,
     /// PathOffset (2 bytes): The offset, in bytes, of the full share path name from the beginning
     /// of the packet header. The full share pathname is Unicode in the form "\\server\share"
     /// for the request. The server component of the path MUST be less than 256 characters in length,
     /// and it MUST be a NetBIOS name, a fully qualified domain name (FQDN), or a textual IPv4 or IPv6 address.
     /// The share component of the path MUST be less than or equal to 80 characters in length.
     /// The share name MUST NOT contain any invalid characters.
-    path_offset: Vec<u8>,
+    pub path_offset: Vec<u8>,
     /// PathLength (2 bytes): The length, in bytes, of the full share path name.
-    path_length: Vec<u8>,
+    pub path_length: Vec<u8>,
     /// Buffer (variable): If SMB2_TREE_CONNECT_FLAG_EXTENSION_PRESENT is not set in the Flags field of this structure,
     /// this field is a variable-length buffer that contains the full share path name.
     /// If SMB2_TREE_CONNECT_FLAG_EXTENSION_PRESENT is set in the Flags field in this structure,
     /// this field is a variable-length buffer that contains the tree connect request extension
-    buffer: Option<TreeConnectExtension>,
+    pub buffer: Vec<u8>,
 }
 
 impl TreeConnect {
@@ -43,7 +43,7 @@ impl TreeConnect {
             flags: Vec::new(),
             path_offset: Vec::new(),
             path_length: Vec::new(),
-            buffer: None,
+            buffer: Vec::new(),
         }
     }
 }
@@ -71,9 +71,9 @@ impl Flags {
     /// Unpacks the byte code of tree connect request flags.
     pub fn unpack_byte_code(&self) -> Vec<u8> {
         match self {
-            Flags::ClusterReconnect => b"\x00\x01".to_vec(),
-            Flags::RedirectToOwner => b"\x00\x02".to_vec(),
-            Flags::ExtensionPresent => b"\x00\x04".to_vec(),
+            Flags::ClusterReconnect => b"\x01\x00".to_vec(),
+            Flags::RedirectToOwner => b"\x02\x00".to_vec(),
+            Flags::ExtensionPresent => b"\x04\x00".to_vec(),
         }
     }
 }

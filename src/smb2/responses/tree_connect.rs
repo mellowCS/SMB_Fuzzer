@@ -1,19 +1,19 @@
 //! The SMB2 TREE_CONNECT Response packet is sent by the server when an SMB2 TREE_CONNECT request is processed successfully by the server.
 //! This response is composed of an SMB2 Packet Header that is followed by this response structure.
 
-const STRUCTURE_SIZE: &[u8; 2] = b"\x00\x10";
+const STRUCTURE_SIZE: &[u8; 2] = b"\x10\x00";
 
 /// A struct that represents a tree connect response.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct TreeConnect {
     /// StructureSize (2 bytes): The server MUST set this field to 16,
     /// indicating the size of the response structure, not including the header.
-    structure_size: Vec<u8>,
+    pub structure_size: Vec<u8>,
     /// ShareType (1 byte): The type of share being accessed.
-    share_type: Option<ShareType>,
+    pub share_type: Option<ShareType>,
     /// Reserved (1 byte): This field MUST NOT be used and MUST be reserved.
     /// The server MUST set this to 0, and the client MUST ignore it on receipt.
-    reserved: Vec<u8>,
+    pub reserved: Vec<u8>,
     /// ShareFlags (4 bytes): This field contains properties for this share.
     ///
     /// This field MUST contain one of the following offline caching properties:
@@ -25,12 +25,12 @@ pub struct TreeConnect {
     /// SMB2_SHAREFLAG_RESTRICT_EXCLUSIVE_OPENS, SMB2_SHAREFLAG_FORCE_SHARED_DELETE,
     /// SMB2_SHAREFLAG_ALLOW_NAMESPACE_CACHING, SMB2_SHAREFLAG_ACCESS_BASED_DIRECTORY_ENUM,
     /// SMB2_SHAREFLAG_FORCE_LEVELII_OPLOCK and SMB2_SHAREFLAG_ENABLE_HASH.
-    share_flags: Vec<u8>,
+    pub share_flags: Vec<u8>,
     /// Capabilities (4 bytes): Indicates various capabilities for this share.
-    capabilities: Vec<u8>,
+    pub capabilities: Vec<u8>,
     /// MaximalAccess (4 bytes): Contains the maximal access for the user that
     /// establishes the tree connect on the share based on the share's permissions.
-    maximal_access: Vec<u8>,
+    pub maximal_access: Vec<u8>,
 }
 
 impl TreeConnect {
@@ -69,6 +69,20 @@ impl ShareType {
             ShareType::Disk => b"\x01".to_vec(),
             ShareType::Pipe => b"\x02".to_vec(),
             ShareType::Print => b"\x03".to_vec(),
+        }
+    }
+
+    /// Maps the incoming byte code to the corresponding share type.
+    pub fn map_byte_code_to_share_type(byte_code: Vec<u8>) -> Self {
+        if let Some(code) = byte_code.get(0) {
+            match code {
+                1 => ShareType::Disk,
+                2 => ShareType::Pipe,
+                3 => ShareType::Print,
+                _ => panic!("Invalid share type from tree connect_response."),
+            }
+        } else {
+            panic!("Empty share type from tree connect response.")
         }
     }
 }

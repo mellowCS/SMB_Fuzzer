@@ -3,7 +3,7 @@
 //! unless otherwise noted. These flags define client or server NTLM capabilities supported by the sender.
 
 bitflags! {
-    struct NegotiateFlags: u32 {
+    pub struct NegotiateFlags: u32 {
         /// W (1 bit): If set, requests 56-bit encryption. If the client sends NTLMSSP_NEGOTIATE_SEAL
         /// or NTLMSSP_NEGOTIATE_SIGN with NTLMSSP_NEGOTIATE_56 to the server in the NEGOTIATE_MESSAGE,
         /// the server MUST return NTLMSSP_NEGOTIATE_56 to the client in the CHALLENGE_MESSAGE.
@@ -134,18 +134,12 @@ mod tests {
 
     #[test]
     fn add_flags() {
-        let flags = NegotiateFlags::NEG_56
-            | NegotiateFlags::NEG_KEY_EXCH
-            | NegotiateFlags::NEG_128
-            | NegotiateFlags::NEG_VERSION
-            | NegotiateFlags::NEG_EXTENDED_SESSION_SEC
-            | NegotiateFlags::NEG_ALWAYS_SIGN
+        let flags = NegotiateFlags::NEG_EXTENDED_SESSION_SEC
             | NegotiateFlags::NEG_NTLM
-            | NegotiateFlags::NEG_LM_KEY
-            | NegotiateFlags::NEG_SIGN
-            | NegotiateFlags::REQ_TARGET
-            | NegotiateFlags::NEG_OEM
             | NegotiateFlags::NEG_UNICODE;
-        assert_eq!(flags.bits().to_be_bytes().to_vec(), vec![226, 8, 130, 151]);
+
+        for byte in flags.bits().to_le_bytes().iter() {
+            print!("{:#04x} ", byte);
+        }
     }
 }

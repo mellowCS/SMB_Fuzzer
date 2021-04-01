@@ -2,7 +2,7 @@
 //! The SMB2 NEGOTIATE Request packet is used by the client to notify the server what dialects of the SMB 2 Protocol the client understands.
 //! This request is composed of an SMB2 header, followed by this request structure.
 
-use crate::smb2::handshake_helper::negotiate_context::NegotiateContext;
+use crate::smb2::helper_functions::negotiate_context::NegotiateContext;
 
 /// negotiate request size of 36 bytes
 const STRUCTURE_SIZE: &[u8; 2] = b"\x24\x00";
@@ -114,5 +114,14 @@ impl Dialects {
             Dialects::SMB302.unpack_byte_code(),
             Dialects::SMB311.unpack_byte_code(),
         ]
+    }
+}
+
+impl std::fmt::Display for Negotiate {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f,
+        "Negotiate Request: \n\t{:?}\n\t{:?}\n\t{:?}\n\t{:?}\n\t{:?}\n\t{:?}\n\t{:?}\n\t{:?}\n\t{:?}\n\t{:?}\n\t{:?}\n\t{:?}\n\t{:?}",
+        self.structure_size, self.dialect_count, self.security_mode, self.reserved, self.capabilities, self.client_guid, self.negotiate_context_offset, self.negotiate_context_count,
+    self.reserved2, self.client_start_time, self.dialects, self.padding, self.negotiate_context_list)
     }
 }
