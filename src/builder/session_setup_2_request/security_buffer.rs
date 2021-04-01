@@ -159,7 +159,7 @@ pub fn build_ntlmv2_response(server_time_stamp: Vec<u8>) -> NtlmV2Response {
         .to_vec();
 
     let mut eol = AvPair::default();
-    eol.av_id = Some(AvId::MsvAvEOL);
+    eol.av_id = Some(AvId::MsvAvEol);
     eol.av_len = vec![0; 2];
 
     response.ntlmv2_client_challenge.av_pairs = vec![

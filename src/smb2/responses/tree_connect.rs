@@ -214,7 +214,7 @@ impl ShareFlags {
 ///       This flag is not valid for SMB 2.0.2, 2.1, 3.0, and 3.0.2 dialects.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Capabilities {
-    DFS,
+    Dfs,
     ContinuousAvailability,
     Scaleout,
     Cluster,
@@ -226,7 +226,7 @@ impl Capabilities {
     /// Unpacks the byte code for tree connect capabilities.
     pub fn unpack_byte_code(&self) -> u32 {
         match self {
-            Capabilities::DFS => 0x00000008,
+            Capabilities::Dfs => 0x00000008,
             Capabilities::ContinuousAvailability => 0x00000010,
             Capabilities::Scaleout => 0x00000020,
             Capabilities::Cluster => 0x00000040,

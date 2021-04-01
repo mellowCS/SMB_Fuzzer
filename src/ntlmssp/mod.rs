@@ -228,7 +228,7 @@ impl AvPair {
 ///   An all-zero value of the hash is used to indicate absence of channel bindings.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum AvId {
-    MsvAvEOL,
+    MsvAvEol,
     MsvAvNbComputerName,
     MsvAvNbDomainName,
     MsvAvDnsComputerName,
@@ -245,7 +245,7 @@ impl AvId {
     /// Unpacks the byte code of AV Ids.
     pub fn unpack_byte_code(&self) -> Vec<u8> {
         match self {
-            AvId::MsvAvEOL => b"\x00\x00".to_vec(),
+            AvId::MsvAvEol => b"\x00\x00".to_vec(),
             AvId::MsvAvNbComputerName => b"\x01\x00".to_vec(),
             AvId::MsvAvNbDomainName => b"\x02\x00".to_vec(),
             AvId::MsvAvDnsComputerName => b"\x03\x00".to_vec(),
@@ -263,7 +263,7 @@ impl AvId {
     pub fn map_byte_code_to_av_id(byte_code: Vec<u8>) -> AvId {
         if let Some(code) = byte_code.get(0) {
             match code {
-                0 => AvId::MsvAvEOL,
+                0 => AvId::MsvAvEol,
                 1 => AvId::MsvAvNbComputerName,
                 2 => AvId::MsvAvNbDomainName,
                 3 => AvId::MsvAvDnsComputerName,

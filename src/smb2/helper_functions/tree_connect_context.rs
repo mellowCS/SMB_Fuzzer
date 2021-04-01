@@ -138,7 +138,7 @@ impl RemotedIdentityTreeConnectContextId {
 
 /// Contains information about the use in the ticket info.
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct SIDAttrData {
+pub struct SidAttrData {
     /// SidData (variable): SID, information in BLOB_DATA format.
     /// BlobSize MUST be set to the size of SID and BlobData MUST be set to the SID value.
     sid_data: Vec<u8>,
@@ -146,10 +146,10 @@ pub struct SIDAttrData {
     attr: Vec<u8>,
 }
 
-impl SIDAttrData {
+impl SidAttrData {
     /// Creates a new instance of SID Attr Data.
     pub fn default() -> Self {
-        SIDAttrData {
+        SidAttrData {
             sid_data: Vec::new(),
             attr: Vec::new(),
         }
@@ -211,7 +211,7 @@ pub struct SidArrayData {
     /// SidAttrCount (2 bytes): Number of SID_ATTR_DATA elements in SidAttrList array.
     sid_attr_count: Vec<u8>,
     /// SidAttrList (variable): An array with SidAttrCount number of SID_ATTR_DATA elements.
-    sid_attr_list: Vec<SIDAttrData>,
+    sid_attr_list: Vec<SidAttrData>,
 }
 
 impl SidArrayData {

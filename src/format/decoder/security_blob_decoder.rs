@@ -137,7 +137,7 @@ mod tests {
             fifth_target.value = b"\x60\x16\xad\x6d\x47\x21\xd7\x01".to_vec();
 
             let mut sixth_target = AvPair::default();
-            sixth_target.av_id = Some(AvId::MsvAvEOL);
+            sixth_target.av_id = Some(AvId::MsvAvEol);
             sixth_target.av_len = b"\x00\x00".to_vec();
 
             Setup {
