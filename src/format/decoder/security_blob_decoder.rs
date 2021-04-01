@@ -1,6 +1,6 @@
 use crate::{
     format::convert_byte_array_to_int,
-    ntlmssp::{self, challenge::Challenge, AvPair, AvId, MessageType},
+    ntlmssp::{self, challenge::Challenge, AvId, AvPair, MessageType},
 };
 
 /// Decodes the NTLMSSP security response body.

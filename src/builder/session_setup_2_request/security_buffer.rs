@@ -1,4 +1,4 @@
-use ntlmssp::{AvPair, AvId};
+use ntlmssp::{AvId, AvPair};
 
 use crate::{
     format::encoder::security_blob_encoder::encode_authenticate_blob,
