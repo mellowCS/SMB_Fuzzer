@@ -1,6 +1,11 @@
 pub mod create_options;
 pub mod file_access_mask;
 
+use rand::{
+    distributions::{Distribution, Standard},
+    Rng,
+};
+
 pub const STRUCTURE_SIZE: &[u8; 2] = b"\x39\x00";
 
 /// The SMB2 CREATE Request packet is sent by a client to request either
@@ -98,32 +103,6 @@ impl Create {
     }
 }
 
-/// OplockLevel (1 byte): The oplock level.
-/// This field MUST contain one of the following values.
-/// For named pipes, the server MUST always revert to SMB2_OPLOCK_LEVEL_NONE
-/// irrespective of the value of this field.
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub enum OplockLevel {
-    None,
-    Level2,
-    Exclusive,
-    Batch,
-    Lease,
-}
-
-impl OplockLevel {
-    /// Unpacks the byte code of the corresponding requested oplock level.
-    pub fn unpack_byte_code(&self) -> Vec<u8> {
-        match self {
-            OplockLevel::None => b"\x00".to_vec(),
-            OplockLevel::Level2 => b"\x01".to_vec(),
-            OplockLevel::Exclusive => b"\x08".to_vec(),
-            OplockLevel::Batch => b"\x09".to_vec(),
-            OplockLevel::Lease => b"\xff".to_vec(),
-        }
-    }
-}
-
 /// ImpersonationLevel (4 bytes): This field specifies the impersonation level
 /// requested by the application that is issuing the create request, and MUST
 /// contain one of the following values.
@@ -143,6 +122,17 @@ impl ImpersonationLevel {
             ImpersonationLevel::Identification => b"\x01\x00\x00\x00".to_vec(),
             ImpersonationLevel::Impersonation => b"\x02\x00\x00\x00".to_vec(),
             ImpersonationLevel::Delegate => b"\x03\x00\x00\x00".to_vec(),
+        }
+    }
+}
+
+impl Distribution<ImpersonationLevel> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> ImpersonationLevel {
+        match rng.gen_range(0..=3) {
+            0 => ImpersonationLevel::Anonymous,
+            1 => ImpersonationLevel::Identification,
+            2 => ImpersonationLevel::Impersonation,
+            _ => ImpersonationLevel::Delegate,
         }
     }
 }
@@ -178,6 +168,16 @@ impl ShareAccess {
     }
 }
 
+impl Distribution<ShareAccess> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> ShareAccess {
+        match rng.gen_range(0..=2) {
+            0 => ShareAccess::ShareRead,
+            1 => ShareAccess::ShareWrite,
+            _ => ShareAccess::ShareDelete,
+        }
+    }
+}
+
 /// CreateDisposition (4 bytes): Defines the action the server
 /// MUST take if the file that is specified in the name field already exists.
 /// For opening named pipes, this field can be set to any value by the client
@@ -203,6 +203,19 @@ impl CreateDisposition {
             CreateDisposition::OpenIf => b"\x03\x00\x00\x00".to_vec(),
             CreateDisposition::Overwrite => b"\x04\x00\x00\x00".to_vec(),
             CreateDisposition::OverwriteIf => b"\x05\x00\x00\x00".to_vec(),
+        }
+    }
+}
+
+impl Distribution<CreateDisposition> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> CreateDisposition {
+        match rng.gen_range(0..=5) {
+            0 => CreateDisposition::Supersede,
+            1 => CreateDisposition::Open,
+            2 => CreateDisposition::Create,
+            3 => CreateDisposition::OpenIf,
+            4 => CreateDisposition::Overwrite,
+            _ => CreateDisposition::OverwriteIf,
         }
     }
 }

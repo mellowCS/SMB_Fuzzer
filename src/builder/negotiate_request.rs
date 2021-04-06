@@ -16,7 +16,10 @@ pub const ALL_EXCEPT_ENCRYPTION: &[u8; 4] = b"\x3f\x00\x00\x00";
 pub const DEFAULT_CONTEXT_OFFSET: &[u8; 4] = b"\x70\x00\x00\x00";
 
 /// Builds the working default negotiate request.
-pub fn build_default_negotiate_request() -> (header::SyncHeader, requests::negotiate::Negotiate) {
+pub fn build_default_negotiate_request() -> (
+    Option<header::SyncHeader>,
+    Option<requests::negotiate::Negotiate>,
+) {
     let mut neg_req = requests::negotiate::Negotiate::default();
 
     neg_req.dialect_count = DEFAULT_DIALECT_COUNT.to_vec();
@@ -34,8 +37,15 @@ pub fn build_default_negotiate_request() -> (header::SyncHeader, requests::negot
     neg_req.negotiate_context_offset = DEFAULT_CONTEXT_OFFSET.to_vec();
 
     (
-        super::build_sync_header(header::Commands::Negotiate, 0, 0, None, None, 0),
-        neg_req,
+        Some(super::build_sync_header(
+            header::Commands::Negotiate,
+            0,
+            0,
+            None,
+            None,
+            0,
+        )),
+        Some(neg_req),
     )
 }
 

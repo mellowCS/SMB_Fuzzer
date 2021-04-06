@@ -2,6 +2,11 @@
 //! The SMB2 TREE_CONNECT Request packet is sent by a client to request access to a particular share on the server.
 //! This request is composed of an SMB2 Packet Header that is followed by this request structure.
 
+use rand::{
+    distributions::{Distribution, Standard},
+    Rng,
+};
+
 use crate::smb2::helper_functions::tree_connect_context::TreeConnectContext;
 
 /// tree connect request size of 9 bytes
@@ -69,11 +74,30 @@ pub enum Flags {
 
 impl Flags {
     /// Unpacks the byte code of tree connect request flags.
-    pub fn unpack_byte_code(&self) -> Vec<u8> {
+    pub fn unpack_byte_code(&self) -> u16 {
         match self {
-            Flags::ClusterReconnect => b"\x01\x00".to_vec(),
-            Flags::RedirectToOwner => b"\x02\x00".to_vec(),
-            Flags::ExtensionPresent => b"\x04\x00".to_vec(),
+            Flags::ClusterReconnect => 0x0001,
+            Flags::RedirectToOwner => 0x0002,
+            Flags::ExtensionPresent => 0x0004,
+        }
+    }
+
+    /// Returns the some calculated from an array of flags.
+    pub fn return_sum_of_chosen_flags(flags: Vec<Flags>) -> Vec<u8> {
+        let combined_flags: u16 = flags
+            .iter()
+            .fold(0u16, |acc, flag| acc + flag.unpack_byte_code());
+
+        combined_flags.to_le_bytes().to_vec()
+    }
+}
+
+impl Distribution<Flags> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Flags {
+        match rng.gen_range(0..=2) {
+            0 => Flags::ClusterReconnect,
+            1 => Flags::RedirectToOwner,
+            _ => Flags::ExtensionPresent,
         }
     }
 }

@@ -42,10 +42,17 @@ pub fn build_sync_header(
 }
 
 /// Creates a complete create request.
-pub fn build_default_echo_request() -> (header::SyncHeader, requests::echo::Echo) {
+pub fn build_default_echo_request() -> (Option<header::SyncHeader>, Option<requests::echo::Echo>) {
     (
-        build_sync_header(header::Commands::Echo, 1, 7968, None, None, 6),
-        requests::echo::Echo::default(),
+        Some(build_sync_header(
+            header::Commands::Echo,
+            1,
+            7968,
+            None,
+            None,
+            6,
+        )),
+        Some(requests::echo::Echo::default()),
     )
 }
 
@@ -54,19 +61,19 @@ pub fn build_close_request(
     tree_id: Vec<u8>,
     session_id: Vec<u8>,
     file_id: Vec<u8>,
-) -> (header::SyncHeader, requests::close::Close) {
+) -> (Option<header::SyncHeader>, Option<requests::close::Close>) {
     let mut close = requests::close::Close::default();
     close.file_id = file_id;
     (
-        build_sync_header(
+        Some(build_sync_header(
             header::Commands::Close,
             1,
             7872,
             Some(tree_id),
             Some(session_id),
             7,
-        ),
-        close,
+        )),
+        Some(close),
     )
 }
 

@@ -10,11 +10,20 @@ pub const DEFAULT_BUFFER_OFFSET: &[u8; 2] = b"\x58\x00";
 pub const DEFAULT_BUFFER_LENGTH: &[u8; 2] = b"\x4a\x00";
 
 /// Builds a working default session setup 1 request.
-pub fn build_default_session_setup_1_request(
-) -> (header::SyncHeader, requests::session_setup::SessionSetup) {
+pub fn build_default_session_setup_1_request() -> (
+    Option<header::SyncHeader>,
+    Option<requests::session_setup::SessionSetup>,
+) {
     (
-        super::build_sync_header(header::Commands::SessionSetup, 1, 8192, None, None, 1),
-        build_default_session_setup_1_request_body(),
+        Some(super::build_sync_header(
+            header::Commands::SessionSetup,
+            1,
+            8192,
+            None,
+            None,
+            1,
+        )),
+        Some(build_default_session_setup_1_request_body()),
     )
 }
 

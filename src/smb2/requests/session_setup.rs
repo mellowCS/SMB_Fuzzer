@@ -3,6 +3,11 @@
 //! within a new or existing SMB 2 Protocol transport connection to the server.
 //! This request is composed of an SMB2 header, followed by this request structure.
 
+use rand::{
+    distributions::{Distribution, Standard},
+    Rng,
+};
+
 /// session setup request size of 25 bytes
 const STRUCTURE_SIZE: &[u8; 2] = b"\x19\x00";
 
@@ -76,6 +81,15 @@ impl Flags {
         match self {
             Flags::SessionSetupBinding => b"\x01".to_vec(),
             Flags::Zero => b"\x00".to_vec(),
+        }
+    }
+}
+
+impl Distribution<Flags> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Flags {
+        match rng.gen_range(0..=1) {
+            0 => Flags::SessionSetupBinding,
+            _ => Flags::Zero,
         }
     }
 }

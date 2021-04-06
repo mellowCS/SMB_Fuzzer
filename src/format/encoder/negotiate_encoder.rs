@@ -7,8 +7,6 @@ use crate::smb2::{
     requests::negotiate::Negotiate,
 };
 
-use crate::format::convert_byte_array_to_int;
-
 /// Serializes a negotiate request from the corresponding struct.
 pub fn serialize_negotiate_request_body(request: &Negotiate) -> Vec<u8> {
     let mut serialized_request: Vec<u8> = Vec::new();
@@ -24,15 +22,20 @@ pub fn serialize_negotiate_request_body(request: &Negotiate) -> Vec<u8> {
     serialized_request.append(&mut request.reserved2.clone());
     serialized_request.append(&mut request.dialects.iter().cloned().flatten().collect());
     serialized_request.append(&mut request.padding.clone());
-    serialized_request.append(&mut serialize_negotiate_contexts(
+    let mut serialized_contexts = serialize_negotiate_contexts(
         request.negotiate_context_list.clone(),
-    ));
+        serialized_request.len() as u32,
+    );
+    serialized_request.append(&mut serialized_contexts);
 
     serialized_request
 }
 
 /// Serializes the list of negotiate contexts.
-pub fn serialize_negotiate_contexts(context_list: Vec<NegotiateContext>) -> Vec<u8> {
+pub fn serialize_negotiate_contexts(
+    context_list: Vec<NegotiateContext>,
+    packet_size: u32,
+) -> Vec<u8> {
     let mut serialized_negotiate_contexts: Vec<u8> = Vec::new();
     let context_list_length = context_list.len() as usize;
     for (index, context) in context_list.into_iter().enumerate() {
@@ -43,8 +46,9 @@ pub fn serialize_negotiate_contexts(context_list: Vec<NegotiateContext>) -> Vec<
             &context.data.unwrap(),
         ));
         if index < context_list_length - 1 {
-            serialized_negotiate_contexts
-                .append(&mut add_alignment_padding_if_necessary(context.data_length));
+            serialized_negotiate_contexts.append(&mut add_alignment_padding_if_necessary(
+                packet_size + serialized_negotiate_contexts.len() as u32,
+            ));
         }
     }
 
@@ -52,8 +56,12 @@ pub fn serialize_negotiate_contexts(context_list: Vec<NegotiateContext>) -> Vec<
 }
 
 /// Adds an alignment padding between negotiate contexts if the data length is not 8 byte aligned.
-pub fn add_alignment_padding_if_necessary(data_length: Vec<u8>) -> Vec<u8> {
-    vec![0; (8 - convert_byte_array_to_int(data_length, false) % 8) as usize]
+pub fn add_alignment_padding_if_necessary(packet_size: u32) -> Vec<u8> {
+    let remainer = packet_size % 8;
+    match remainer {
+        0 => vec![],
+        _ => vec![0; 8 - remainer as usize],
+    }
 }
 
 /// Navigates to a different serializer depending on the given context type.
@@ -266,14 +274,14 @@ mod tests {
 
         assert_eq!(
             expected_byte_array,
-            serialize_negotiate_contexts(vec![setup.negotiate_context_encrypt.clone()])
+            serialize_negotiate_contexts(vec![setup.negotiate_context_encrypt.clone()], 0)
         );
 
         let expected_byte_array = b"\x03\x00\x0e\x00\x00\x00\x00\x00\x03\x00\x00\x00\x00\x00\x00\x00\x01\x00\x02\x00\x03\x00".to_vec();
 
         assert_eq!(
             expected_byte_array,
-            serialize_negotiate_contexts(vec![setup.negotiate_context_compress.clone()])
+            serialize_negotiate_contexts(vec![setup.negotiate_context_compress.clone()], 0)
         );
 
         let mut expected_byte_array =
@@ -282,10 +290,13 @@ mod tests {
 
         assert_eq!(
             expected_byte_array,
-            serialize_negotiate_contexts(vec![
-                setup.negotiate_context_encrypt,
-                setup.negotiate_context_compress
-            ])
+            serialize_negotiate_contexts(
+                vec![
+                    setup.negotiate_context_encrypt,
+                    setup.negotiate_context_compress
+                ],
+                0
+            )
         );
     }
 

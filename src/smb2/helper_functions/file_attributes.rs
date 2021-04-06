@@ -1,3 +1,5 @@
+use rand::{distributions::Standard, prelude::Distribution, Rng};
+
 /// The following attributes are defined for files and directories.
 /// They can be used in any combination unless noted in the description of the attribute's meaning.
 /// There is no file attribute with the value 0x00000000 because a value of 0x00000000 in the
@@ -54,6 +56,28 @@ impl FileAttributes {
             .fold(0u32, |acc, attribute| acc + attribute.unpack_byte_code());
 
         combined_attr.to_le_bytes().to_vec()
+    }
+}
+
+impl Distribution<FileAttributes> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> FileAttributes {
+        match rng.gen_range(0..=15) {
+            0 => FileAttributes::Archive,
+            1 => FileAttributes::Compressed,
+            2 => FileAttributes::Directory,
+            3 => FileAttributes::Encrypted,
+            4 => FileAttributes::Hidden,
+            5 => FileAttributes::Normal,
+            6 => FileAttributes::NotContentIndexed,
+            7 => FileAttributes::Offline,
+            8 => FileAttributes::Readonly,
+            9 => FileAttributes::ReparsePoint,
+            10 => FileAttributes::SparseFile,
+            11 => FileAttributes::System,
+            12 => FileAttributes::Temporary,
+            13 => FileAttributes::IntegrityStream,
+            _ => FileAttributes::NoScrubData,
+        }
     }
 }
 

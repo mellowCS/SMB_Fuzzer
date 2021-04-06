@@ -1,11 +1,12 @@
 use crate::smb2::{
     header,
+    helper_functions::fields::OplockLevel,
     helper_functions::file_attributes::FileAttributes,
     requests::{
         self,
         create::{
             create_options::CreateOptions, file_access_mask::FileAccessMask, CreateDisposition,
-            ImpersonationLevel, OplockLevel, ShareAccess,
+            ImpersonationLevel, ShareAccess,
         },
     },
 };
@@ -21,17 +22,17 @@ pub const DEFAULT_NAME_LENGTH: &[u8; 2] = b"\x1a\x00";
 pub fn build_default_create_request(
     tree_id: Vec<u8>,
     session_id: Vec<u8>,
-) -> (header::SyncHeader, requests::create::Create) {
+) -> (Option<header::SyncHeader>, Option<requests::create::Create>) {
     (
-        super::build_sync_header(
+        Some(super::build_sync_header(
             header::Commands::Create,
             1,
             7968,
             Some(tree_id),
             Some(session_id),
             4,
-        ),
-        build_default_create_request_body(),
+        )),
+        Some(build_default_create_request_body()),
     )
 }
 

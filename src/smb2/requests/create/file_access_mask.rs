@@ -1,4 +1,10 @@
 //! The following SMB2 Access Mask flag values can be used when accessing a file, pipe or printer.
+
+use rand::{
+    distributions::{Distribution, Standard},
+    Rng,
+};
+
 /// File_Pipe_Printer_Access_Mask (4 bytes): For a file, pipe, or printer,
 /// the value MUST be constructed using the following values (for a printer,
 /// the value MUST have at least one of the following: FILE_WRITE_DATA,
@@ -56,11 +62,43 @@ impl FileAccessMask {
 
     /// Returns a sum of the given file access masks as a 4 byte array.
     pub fn return_sum_of_chosen_file_access_masks(file_access: Vec<FileAccessMask>) -> Vec<u8> {
-        let combined_file_access_masks: u32 = file_access
-            .iter()
-            .fold(0u32, |acc, access| acc + access.unpack_byte_code());
+        let combined_file_access_masks: u32 = file_access.iter().fold(0u32, |acc, access| {
+            let temp: u64 = acc as u64 + access.unpack_byte_code() as u64;
+            if temp < u32::MAX as u64 {
+                acc + access.unpack_byte_code()
+            } else {
+                acc
+            }
+        });
 
         combined_file_access_masks.to_le_bytes().to_vec()
+    }
+}
+
+impl Distribution<FileAccessMask> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> FileAccessMask {
+        match rng.gen_range(0..=19) {
+            0 => FileAccessMask::ReadData,
+            1 => FileAccessMask::WriteData,
+            2 => FileAccessMask::AppendData,
+            3 => FileAccessMask::ReadEa,
+            4 => FileAccessMask::WriteEa,
+            5 => FileAccessMask::DeleteChild,
+            6 => FileAccessMask::Execute,
+            7 => FileAccessMask::ReadAttributes,
+            8 => FileAccessMask::WriteAttributes,
+            9 => FileAccessMask::Delete,
+            10 => FileAccessMask::ReadControl,
+            11 => FileAccessMask::WriteDac,
+            12 => FileAccessMask::WriteOwner,
+            13 => FileAccessMask::Synchronize,
+            14 => FileAccessMask::AccessSystemSecurity,
+            15 => FileAccessMask::MaximumAllowed,
+            16 => FileAccessMask::GenericAll,
+            17 => FileAccessMask::GenericExecute,
+            18 => FileAccessMask::GenericWrite,
+            _ => FileAccessMask::GenericRead,
+        }
     }
 }
 

@@ -11,17 +11,20 @@ pub const DEFAULT_PATH_LENGTH: &[u8; 2] = b"\x2a\x00";
 /// Builds a working default tree connect request.
 pub fn build_default_tree_connect_request(
     session_id: Vec<u8>,
-) -> (header::SyncHeader, requests::tree_connect::TreeConnect) {
+) -> (
+    Option<header::SyncHeader>,
+    Option<requests::tree_connect::TreeConnect>,
+) {
     (
-        super::build_sync_header(
+        Some(super::build_sync_header(
             header::Commands::TreeConnect,
             1,
             8064,
             None,
             Some(session_id),
             3,
-        ),
-        build_default_tree_connect_request_body(),
+        )),
+        Some(build_default_tree_connect_request_body()),
     )
 }
 

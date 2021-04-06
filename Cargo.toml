@@ -9,6 +9,7 @@ edition = "2018"
 [dependencies]
 bitflags = "1.2.1"
 hex = "0.4.3"
+rand = "0.8.3"
 
 [lib]
 name = "smb_fuzzer"

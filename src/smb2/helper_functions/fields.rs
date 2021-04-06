@@ -1,3 +1,7 @@
+use rand::{
+    distributions::{Distribution, Standard},
+    Rng,
+};
 /// *Negotiate Signing Enabled*:
 ///     - When set, indicates that security signatures are enabled on the client.
 ///       The client MUST set this bit if the SMB2_NEGOTIATE_SIGNING_REQUIRED bit is not set,
@@ -44,6 +48,15 @@ impl SecurityMode {
     }
 }
 
+impl Distribution<SecurityMode> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> SecurityMode {
+        match rng.gen_range(0..=1) {
+            0 => SecurityMode::NegotiateSigningEnabled,
+            _ => SecurityMode::NegotiateSigningRequired,
+        }
+    }
+}
+
 /// *Global Cap DFS*:
 ///     - When set, indicates that the client supports the Distributed File System (DFS).
 ///
@@ -78,7 +91,7 @@ pub enum Capabilities {
 
 impl Capabilities {
     /// Return the corresponding byte code (4 bytes) for each capability.
-    pub fn unpack_byte_code(&self) -> u8 {
+    pub fn unpack_byte_code(&self) -> u32 {
         match self {
             Capabilities::GlobalCapDfs => 0x00000001,
             Capabilities::GlobalCapLeasing => 0x00000002,
@@ -93,11 +106,11 @@ impl Capabilities {
 
     /// Add the values of a list of chosen capabilities and return the sum as a hex string.
     pub fn return_sum_of_chosen_capabilities(capabilities: Vec<Capabilities>) -> Vec<u8> {
-        let combined_cap: u8 = capabilities
+        let combined_cap: u32 = capabilities
             .iter()
-            .fold(0u8, |acc, cap| acc + cap.unpack_byte_code());
+            .fold(0, |acc, cap| acc + cap.unpack_byte_code());
 
-        vec![combined_cap, 0, 0, 0]
+        combined_cap.to_le_bytes().to_vec()
     }
 
     /// Shortcut for returning all capabilities as a sum.
@@ -111,6 +124,20 @@ impl Capabilities {
             Capabilities::GlobalCapDirectoryLeasing,
             Capabilities::GlobalCapEncryption,
         ])
+    }
+}
+
+impl Distribution<Capabilities> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Capabilities {
+        match rng.gen_range(0..=6) {
+            0 => Capabilities::GlobalCapDfs,
+            1 => Capabilities::GlobalCapLeasing,
+            2 => Capabilities::GlobalCapLargeMtu,
+            3 => Capabilities::GlobalCapMultiChannel,
+            4 => Capabilities::GlobalCapPersistentHandles,
+            5 => Capabilities::GlobalCapDirectoryLeasing,
+            _ => Capabilities::GlobalCapEncryption,
+        }
     }
 }
 
@@ -136,6 +163,18 @@ impl OplockLevel {
             OplockLevel::Exclusive => b"\x08".to_vec(),
             OplockLevel::Batch => b"\x09".to_vec(),
             OplockLevel::Lease => b"\xff".to_vec(),
+        }
+    }
+}
+
+impl Distribution<OplockLevel> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> OplockLevel {
+        match rng.gen_range(0..=4) {
+            0 => OplockLevel::None,
+            1 => OplockLevel::Level2,
+            2 => OplockLevel::Exclusive,
+            3 => OplockLevel::Batch,
+            _ => OplockLevel::Lease,
         }
     }
 }

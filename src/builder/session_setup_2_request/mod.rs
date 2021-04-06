@@ -13,17 +13,22 @@ const SECURITY_BUFFER_LENGTH: &[u8; 2] = b"\x56\x01";
 pub fn build_default_session_setup_2_request(
     session_id: Vec<u8>,
     server_challenge_struct: ntlmssp::challenge::Challenge,
-) -> (header::SyncHeader, requests::session_setup::SessionSetup) {
+) -> (
+    Option<header::SyncHeader>,
+    Option<requests::session_setup::SessionSetup>,
+) {
     (
-        super::build_sync_header(
+        Some(super::build_sync_header(
             header::Commands::SessionSetup,
             1,
             8192,
             None,
             Some(session_id),
             2,
-        ),
-        build_default_session_setup_2_request_body(server_challenge_struct),
+        )),
+        Some(build_default_session_setup_2_request_body(
+            server_challenge_struct,
+        )),
     )
 }
 

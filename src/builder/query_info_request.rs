@@ -10,17 +10,20 @@ pub fn build_default_query_info_request(
     tree_id: Vec<u8>,
     session_id: Vec<u8>,
     file_id: Vec<u8>,
-) -> (header::SyncHeader, requests::query_info::QueryInfo) {
+) -> (
+    Option<header::SyncHeader>,
+    Option<requests::query_info::QueryInfo>,
+) {
     (
-        super::build_sync_header(
+        Some(super::build_sync_header(
             header::Commands::QueryInfo,
             1,
             7936,
             Some(tree_id),
             Some(session_id),
             5,
-        ),
-        build_default_query_info_request_body(file_id),
+        )),
+        Some(build_default_query_info_request_body(file_id)),
     )
 }
 

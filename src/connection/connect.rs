@@ -7,25 +7,13 @@ use std::{
     time::Duration,
 };
 
-use builder::{
-    build_close_request, build_default_echo_request, create_request::build_default_create_request,
-    query_info_request::build_default_query_info_request,
-    session_setup_1_request::build_default_session_setup_1_request,
-    session_setup_2_request::build_default_session_setup_2_request,
-    tree_connect_request::build_default_tree_connect_request,
-};
-use format::{
-    decoder::{
-        create_decoder::decode_create_response_body, decode_response_header,
-        security_blob_decoder::decode_security_response,
-    },
-    encoder::serialize_request,
-};
+use state_hopper::go_to_session_setup_1_state;
 
-use crate::builder;
-use crate::ntlmssp::MessageType;
-use crate::smb2::requests::RequestType;
-use crate::{format, smb2::responses};
+use crate::fuzzer::FuzzingStrategy;
+
+use super::packets;
+use super::state_hopper;
+use crate::smb2::responses;
 
 pub fn connect_to_port_445_via_tcp() {
     match TcpStream::connect("192.168.0.171:445") {
@@ -35,49 +23,113 @@ pub fn connect_to_port_445_via_tcp() {
                 .expect("Failed to set read time out.");
             println!("Successfully connected to server in port 445.");
 
-            send_negotiate(&mut stream);
-            let mut buffer = send_session_setup_1_request_and_get_response(&mut stream);
-
-            let (response_header, session_setup_response_body) =
-                format::decoder::decode_session_setup_response(buffer.to_vec());
-
-            let chosen_session_id = response_header.session_id;
-
-            send_session_setup_2_request(
-                &mut stream,
-                session_setup_response_body,
-                chosen_session_id.clone(),
-            );
-
-            buffer =
-                send_tree_connect_request_and_get_response(&mut stream, chosen_session_id.clone());
-
-            let tree_connect_response_header = decode_response_header(buffer[4..68].to_vec());
-            let chosen_tree_id = tree_connect_response_header.tree_id;
-
-            buffer = send_create_request_and_get_response(
-                &mut stream,
-                chosen_session_id.clone(),
-                chosen_tree_id.clone(),
-            );
-
-            let create_response_body = decode_create_response_body(buffer[68..].to_vec());
-            let chosen_file_id = create_response_body.file_id;
+            let (session_id, tree_id, file_id) = state_hopper::go_to_create_state(&mut stream);
 
             send_query_info_request(
                 &mut stream,
-                chosen_session_id.clone(),
-                chosen_tree_id.clone(),
-                chosen_file_id.clone(),
+                session_id.clone(),
+                tree_id.clone(),
+                file_id.clone(),
+                None,
             );
 
-            send_echo_request(&mut stream);
+            send_echo_request(&mut stream, None);
 
-            send_close_request(
+            send_close_request(&mut stream, session_id, tree_id, file_id, None);
+        }
+        Err(e) => {
+            println!("Failed to connect: {}", e);
+        }
+    }
+    println!("Terminated.");
+}
+
+pub fn go_to_session_setup_1_state_and_fuzz_session_setup_2() {
+    match TcpStream::connect("192.168.0.171:445") {
+        Ok(mut stream) => {
+            stream
+                .set_read_timeout(Some(Duration::from_secs(5)))
+                .expect("Failed to set read time out.");
+            println!("Successfully connected to server in port 445.");
+
+            let (response_body, session_id) = go_to_session_setup_1_state(&mut stream);
+            send_session_setup_2_request(
                 &mut stream,
-                chosen_session_id,
-                chosen_tree_id,
-                chosen_file_id,
+                response_body,
+                session_id,
+                Some(FuzzingStrategy::Predefined),
+            );
+        }
+        Err(e) => {
+            println!("Failed to connect: {}", e);
+        }
+    }
+    println!("Terminated.");
+}
+
+pub fn go_to_session_setup_2_state_and_fuzz_tree_connect() {
+    match TcpStream::connect("192.168.0.171:445") {
+        Ok(mut stream) => {
+            stream
+                .set_read_timeout(Some(Duration::from_secs(5)))
+                .expect("Failed to set read time out.");
+            println!("Successfully connected to server in port 445.");
+
+            let session_id = state_hopper::go_to_session_setup_2_state(&mut stream);
+
+            send_tree_connect_request_and_get_response(
+                &mut stream,
+                session_id,
+                Some(FuzzingStrategy::Predefined),
+            );
+        }
+        Err(e) => {
+            println!("Failed to connect: {}", e);
+        }
+    }
+    println!("Terminated.");
+}
+
+pub fn go_to_tree_connect_state_and_fuzz_create() {
+    match TcpStream::connect("192.168.0.171:445") {
+        Ok(mut stream) => {
+            stream
+                .set_read_timeout(Some(Duration::from_secs(5)))
+                .expect("Failed to set read time out.");
+            println!("Successfully connected to server in port 445.");
+
+            let (session_id, tree_id) = state_hopper::go_to_tree_connect_state(&mut stream);
+
+            send_create_request_and_get_response(
+                &mut stream,
+                session_id,
+                tree_id,
+                Some(FuzzingStrategy::Predefined),
+            );
+        }
+        Err(e) => {
+            println!("Failed to connect: {}", e);
+        }
+    }
+    println!("Terminated.");
+}
+
+pub fn go_to_create_state_and_fuzz_query_info() {
+    match TcpStream::connect("192.168.0.171:445") {
+        Ok(mut stream) => {
+            stream
+                .set_read_timeout(Some(Duration::from_secs(5)))
+                .expect("Failed to set read time out.");
+            println!("Successfully connected to server in port 445.");
+
+            let (session_id, tree_id, file_id) = state_hopper::go_to_create_state(&mut stream);
+
+            send_query_info_request(
+                &mut stream,
+                session_id,
+                tree_id,
+                file_id,
+                Some(FuzzingStrategy::Predefined),
             );
         }
         Err(e) => {
@@ -88,12 +140,9 @@ pub fn connect_to_port_445_via_tcp() {
 }
 
 /// Sends a negotiate request to the server.
-pub fn send_negotiate(stream: &mut TcpStream) {
+pub fn send_negotiate(stream: &mut TcpStream, fuzzing_strategy: Option<FuzzingStrategy>) {
     let mut buffer: [u8; 300] = [0; 300];
-    let (negotiate_header, neg_request) =
-        builder::negotiate_request::build_default_negotiate_request();
-    let negotiate_request =
-        format::encoder::serialize_request(&negotiate_header, &RequestType::Negotiate(neg_request));
+    let negotiate_request: Vec<u8> = packets::prepare_negotiate_packet(fuzzing_strategy);
 
     stream.write_all(&negotiate_request[..]).unwrap();
     println!("Sent Negotiate Request, awaiting reply...");
@@ -106,13 +155,12 @@ pub fn send_negotiate(stream: &mut TcpStream) {
 }
 
 /// Sends a session setup 1 request and returns the server response.
-pub fn send_session_setup_1_request_and_get_response(stream: &mut TcpStream) -> [u8; 300] {
+pub fn send_session_setup_1_request_and_get_response(
+    stream: &mut TcpStream,
+    fuzzing_strategy: Option<FuzzingStrategy>,
+) -> [u8; 300] {
     let mut buffer: [u8; 300] = [0; 300];
-    let (session_setup_header_1, sesh_request_1) = build_default_session_setup_1_request();
-    let session_setup_request_1 = format::encoder::serialize_request(
-        &session_setup_header_1,
-        &RequestType::SessionSetup(sesh_request_1),
-    );
+    let session_setup_request_1 = packets::prepare_session_setup_1_packet(fuzzing_strategy);
 
     stream.write_all(&session_setup_request_1[..]).unwrap();
     println!("Sent Session Setup Request 1, awaiting reply...");
@@ -130,23 +178,15 @@ pub fn send_session_setup_1_request_and_get_response(stream: &mut TcpStream) -> 
 pub fn send_session_setup_2_request(
     stream: &mut TcpStream,
     session_setup_response_body: responses::session_setup::SessionSetup,
-    chosen_session_id: Vec<u8>,
+    session_id: Vec<u8>,
+    fuzzing_strategy: Option<FuzzingStrategy>,
 ) {
     let mut buffer: [u8; 300] = [0; 300];
-    let challenge_struct = match decode_security_response(session_setup_response_body.buffer)
-        .message
-        .unwrap()
-    {
-        MessageType::Challenge(challenge) => challenge,
-        _ => panic!("Invalid message type in server response."),
-    };
 
-    let (session_setup_2_request_header, session_setup_2_request_body) =
-        build_default_session_setup_2_request(chosen_session_id, challenge_struct);
-
-    let session_setup_request_2 = serialize_request(
-        &session_setup_2_request_header,
-        &RequestType::SessionSetup(session_setup_2_request_body),
+    let session_setup_request_2 = packets::prepare_session_setup_2_packet(
+        fuzzing_strategy,
+        session_id,
+        session_setup_response_body,
     );
 
     stream.write_all(&session_setup_request_2[..]).unwrap();
@@ -162,16 +202,12 @@ pub fn send_session_setup_2_request(
 /// Sends a tree connect request and returns the server response.
 pub fn send_tree_connect_request_and_get_response(
     stream: &mut TcpStream,
-    chosen_session_id: Vec<u8>,
+    session_id: Vec<u8>,
+    fuzzing_strategy: Option<FuzzingStrategy>,
 ) -> [u8; 300] {
     let mut buffer: [u8; 300] = [0; 300];
-    let (tree_connect_header, tree_connect_request_body) =
-        build_default_tree_connect_request(chosen_session_id);
 
-    let tree_connect_request = serialize_request(
-        &tree_connect_header,
-        &RequestType::TreeConnect(tree_connect_request_body),
-    );
+    let tree_connect_request = packets::prepare_tree_connect_packet(fuzzing_strategy, session_id);
 
     stream.write_all(&tree_connect_request[..]).unwrap();
     println!("Sent Tree Connect request, awaiting reply...");
@@ -188,16 +224,12 @@ pub fn send_tree_connect_request_and_get_response(
 /// Sends a create request and returns the server response.
 pub fn send_create_request_and_get_response(
     stream: &mut TcpStream,
-    chosen_session_id: Vec<u8>,
-    chosen_tree_id: Vec<u8>,
+    session_id: Vec<u8>,
+    tree_id: Vec<u8>,
+    fuzzing_strategy: Option<FuzzingStrategy>,
 ) -> [u8; 300] {
     let mut buffer: [u8; 300] = [0; 300];
-    let (create_request_header, create_request_body) =
-        build_default_create_request(chosen_tree_id, chosen_session_id);
-    let create_request = serialize_request(
-        &create_request_header,
-        &RequestType::Create(create_request_body),
-    );
+    let create_request = packets::prepare_create_packet(fuzzing_strategy, session_id, tree_id);
 
     stream.write_all(&create_request[..]).unwrap();
     println!("Sent Create request, awaiting reply...");
@@ -214,17 +246,14 @@ pub fn send_create_request_and_get_response(
 /// Sends a query info request.
 pub fn send_query_info_request(
     stream: &mut TcpStream,
-    chosen_session_id: Vec<u8>,
-    chosen_tree_id: Vec<u8>,
-    chosen_file_id: Vec<u8>,
+    session_id: Vec<u8>,
+    tree_id: Vec<u8>,
+    file_id: Vec<u8>,
+    fuzzing_strategy: Option<FuzzingStrategy>,
 ) {
     let mut buffer: [u8; 300] = [0; 300];
-    let (query_info_request_header, query_info_request_body) =
-        build_default_query_info_request(chosen_tree_id, chosen_session_id, chosen_file_id);
-    let query_info_request = serialize_request(
-        &query_info_request_header,
-        &RequestType::QueryInfo(query_info_request_body),
-    );
+    let query_info_request =
+        packets::prepare_query_info_packet(fuzzing_strategy, session_id, tree_id, file_id);
 
     stream.write_all(&query_info_request[..]).unwrap();
     println!("Sent Query Info request, awaiting reply...");
@@ -237,11 +266,9 @@ pub fn send_query_info_request(
 }
 
 /// Sends an echo request.
-pub fn send_echo_request(stream: &mut TcpStream) {
+pub fn send_echo_request(stream: &mut TcpStream, fuzzing_strategy: Option<FuzzingStrategy>) {
     let mut buffer: [u8; 300] = [0; 300];
-    let (echo_request_header, echo_request_body) = build_default_echo_request();
-    let echo_request =
-        serialize_request(&echo_request_header, &RequestType::Echo(echo_request_body));
+    let echo_request = packets::prepare_echo_packet(fuzzing_strategy);
 
     stream.write_all(&echo_request[..]).unwrap();
     println!("Sent Echo request, awaiting reply...");
@@ -256,18 +283,15 @@ pub fn send_echo_request(stream: &mut TcpStream) {
 /// Sends a close request.
 pub fn send_close_request(
     stream: &mut TcpStream,
-    chosen_session_id: Vec<u8>,
-    chosen_tree_id: Vec<u8>,
-    chosen_file_id: Vec<u8>,
+    session_id: Vec<u8>,
+    tree_id: Vec<u8>,
+    file_id: Vec<u8>,
+    fuzzing_strategy: Option<FuzzingStrategy>,
 ) {
     let mut buffer: [u8; 300] = [0; 300];
-    let (close_request_header, close_request_body) =
-        build_close_request(chosen_tree_id, chosen_session_id, chosen_file_id);
 
-    let close_request = serialize_request(
-        &close_request_header,
-        &RequestType::Close(close_request_body),
-    );
+    let close_request =
+        packets::prepare_close_packet(fuzzing_strategy, session_id, tree_id, file_id);
 
     stream.write_all(&close_request[..]).unwrap();
     println!("Sent Close request, awaiting reply...");
@@ -286,5 +310,20 @@ mod tests {
     #[test]
     fn test_connection() {
         connect_to_port_445_via_tcp();
+    }
+
+    #[test]
+    fn test_session_setup_2_fuzz() {
+        go_to_session_setup_1_state_and_fuzz_session_setup_2();
+    }
+
+    #[test]
+    fn test_tree_connect_fuzz() {
+        go_to_session_setup_2_state_and_fuzz_tree_connect();
+    }
+
+    #[test]
+    fn test_create_fuzz() {
+        go_to_tree_connect_state_and_fuzz_create();
     }
 }

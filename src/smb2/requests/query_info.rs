@@ -1,6 +1,11 @@
 /// Query Info structure size of 41 bytes
 const STRUCTURE_SIZE: &[u8; 2] = b"\x29\x00";
 
+use rand::{
+    distributions::{Distribution, Standard},
+    Rng,
+};
+
 /// The SMB2 QUERY_INFO Request packet is sent by a client to request
 /// information on a file, named pipe, or underlying volume.
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -102,6 +107,17 @@ impl InfoType {
     }
 }
 
+impl Distribution<InfoType> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> InfoType {
+        match rng.gen_range(0..=3) {
+            0 => InfoType::File,
+            1 => InfoType::FileSystem,
+            2 => InfoType::InfoSecurity,
+            _ => InfoType::InfoQuota,
+        }
+    }
+}
+
 /// Flags (4 bytes): The flags MUST be set to a combination of zero or
 /// more of these bit values for a FileFullEaInformation query.
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -128,5 +144,15 @@ impl InfoFlags {
             .fold(0u32, |acc, flag| acc + flag.unpack_byte_code());
 
         combined_flags.to_le_bytes().to_vec()
+    }
+}
+
+impl Distribution<InfoFlags> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> InfoFlags {
+        match rng.gen_range(0..=2) {
+            0 => InfoFlags::RestartScan,
+            1 => InfoFlags::ReturnSingleEntry,
+            _ => InfoFlags::IndexSpecified,
+        }
     }
 }
