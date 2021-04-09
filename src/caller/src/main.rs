@@ -11,7 +11,14 @@ use std::{
     thread::sleep,
 };
 
-use fuzzing_lib::{fuzzer::{FuzzingDirective, FuzzingStrategy}, networking::{packets, state_transition_engine::{ResponseType, State}}, smb2::requests::RequestType};
+use fuzzing_lib::{
+    fuzzer::{FuzzingDirective, FuzzingStrategy},
+    networking::{
+        packets,
+        state_transition_engine::{ResponseType, State},
+    },
+    smb2::requests::RequestType,
+};
 
 pub fn main() {
     let args: Vec<String> = env::args().collect();
@@ -26,7 +33,7 @@ pub fn main() {
 }
 
 /// Checks whether the passed user input is valid.
-pub fn check_args(args: &Vec<String>) {
+pub fn check_args(args: &[String]) {
     if args.len() == 2 {
         match args[1].as_str() {
             "-h" | "--help" => print_help(),
@@ -157,15 +164,21 @@ pub fn fuzz_message_with_strategy(
                 state_response,
                 directive.fuzzing_strategy.unwrap(),
             ),
-            RequestType::Create(_) => {
-                send_fuzzed_create_request(stream, state_response, directive.fuzzing_strategy.unwrap())
-            }
-            RequestType::QueryInfo(_) => {
-                send_fuzzed_query_info_request(stream, state_response, directive.fuzzing_strategy.unwrap())
-            }
-            RequestType::Close(_) => {
-                send_fuzzed_close_request(stream, state_response, directive.fuzzing_strategy.unwrap())
-            },
+            RequestType::Create(_) => send_fuzzed_create_request(
+                stream,
+                state_response,
+                directive.fuzzing_strategy.unwrap(),
+            ),
+            RequestType::QueryInfo(_) => send_fuzzed_query_info_request(
+                stream,
+                state_response,
+                directive.fuzzing_strategy.unwrap(),
+            ),
+            RequestType::Close(_) => send_fuzzed_close_request(
+                stream,
+                state_response,
+                directive.fuzzing_strategy.unwrap(),
+            ),
             RequestType::Echo(_) => {
                 send_fuzzed_echo_request(stream, directive.fuzzing_strategy.unwrap())
             }

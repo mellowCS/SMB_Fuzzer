@@ -269,15 +269,9 @@ pub fn prepare_echo_packet(fuzzing_strategy: Option<FuzzingStrategy>) -> Vec<u8>
             6,
         ));
         echo_request.1 = Some(match strategy {
-            FuzzingStrategy::Predefined => {
-                fuzzer::fuzz_echo_with_predefined_values()
-            }
-            FuzzingStrategy::RandomFields => {
-                fuzzer::fuzz_echo_with_random_fields()
-            }
-            FuzzingStrategy::CompletelyRandom => {
-                fuzzer::fuzz_echo_completely_random()
-            }
+            FuzzingStrategy::Predefined => fuzzer::fuzz_echo_with_predefined_values(),
+            FuzzingStrategy::RandomFields => fuzzer::fuzz_echo_with_random_fields(),
+            FuzzingStrategy::CompletelyRandom => fuzzer::fuzz_echo_completely_random(),
         });
     } else {
         echo_request = builder::build_default_echo_request();
