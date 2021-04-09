@@ -1,0 +1,8 @@
+[package]
+name = "fuzz_caller"
+version = "0.1.0"
+authors = ["mellowCS <cs.germany@protonmail.com>"]
+edition = "2018"
+
+[dependencies]
+fuzzing_lib = { path = "../fuzzing_lib" }
